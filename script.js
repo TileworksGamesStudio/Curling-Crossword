@@ -1122,7 +1122,7 @@ const PUZZLE_DATA_SETS = [
 
 class TimeGatedManager {
   constructor() {
-    this.storageKey = 'daily_crossword_state_v1';
+    this.storageKey = 'daily_crossword_save_state_v2';
     this.state = this.loadState();
   }
 
@@ -1139,6 +1139,9 @@ class TimeGatedManager {
       completed: {},
       savedGrids: {},
       savedTimes: {},
+      best_mini: null,
+      best_midi: null,
+      best_full: null,
       soundEnabled: true,
       streak: 0,
       lastActiveDateStr: null
@@ -1153,30 +1156,61 @@ class TimeGatedManager {
     }
   }
 
-  getTodayDayIndex() {
+  getTodayDayNumber() {
     const epoch = new Date(2025, 0, 1).getTime();
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const dayDiff = Math.max(0, Math.floor((now.getTime() - epoch) / (1000 * 60 * 60 * 24)));
-    return dayDiff % PUZZLE_DATA_SETS.length;
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const dayDiff = Math.max(0, Math.floor((todayMidnight - epoch) / (1000 * 60 * 60 * 24)));
+    return dayDiff + 1;
   }
 
-  getPuzDate(dayIndex) {
-    const currentDayIdx = this.getTodayDayIndex();
-    const diff = dayIndex - currentDayIdx;
-    const d = new Date();
-    d.setDate(d.getDate() + diff);
-    d.setHours(0, 0, 0, 0);
-    return d;
+  getDateForDay(dayNumber) {
+    const epoch = new Date(2025, 0, 1).getTime();
+    const time = epoch + (dayNumber - 1) * (1000 * 60 * 60 * 24);
+    return new Date(time);
+  }
+
+  getPuzzleForDay(dayNumber) {
+    const count = PUZZLE_DATA_SETS.length;
+    if (count === 0) return null;
+    const rawIndex = (dayNumber - 1) % count;
+    const template = PUZZLE_DATA_SETS[rawIndex];
+
+    return {
+      dayNumber,
+      rawIndex,
+      theme: template.theme,
+      date: this.getDateForDay(dayNumber),
+      mini: {
+        ...template.mini,
+        type: 'mini',
+        title: `Mini #${dayNumber} (5×5)`
+      },
+      midi: {
+        ...template.midi,
+        type: 'midi',
+        title: `Midi #${dayNumber} (9×9)`
+      },
+      full: {
+        ...template.full,
+        type: 'full',
+        title: `Classic #${dayNumber} (15×15)`
+      }
+    };
   }
 
   getVaultPuzzles() {
-    const todayIdx = this.getTodayDayIndex();
-    return PUZZLE_DATA_SETS.filter(p => p.dayIndex !== todayIdx);
+    const today = this.getTodayDayNumber();
+    const list = [];
+    const minDay = Math.max(1, today - 60);
+    for (let d = today - 1; d >= minDay; d--) {
+      list.push(this.getPuzzleForDay(d));
+    }
+    return list;
   }
 
-  markCompleted(dayIndex, type, seconds) {
-    const key = `${dayIndex}_${type}`;
+  markCompleted(dayNumber, type, seconds) {
+    const key = `${dayNumber}_${type}`;
     this.state.completed[key] = true;
 
     const timeKey = `best_${type}`;
@@ -1185,16 +1219,25 @@ class TimeGatedManager {
     }
 
     const todayStr = new Date().toDateString();
-    if (this.state.lastActiveDateStr !== todayStr) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toDateString();
+
+    if (this.state.lastActiveDateStr === todayStr) {
+      // already recorded today
+    } else if (this.state.lastActiveDateStr === yesterdayStr) {
       this.state.streak = (this.state.streak || 0) + 1;
+      this.state.lastActiveDateStr = todayStr;
+    } else {
+      this.state.streak = 1;
       this.state.lastActiveDateStr = todayStr;
     }
 
     this.saveState();
   }
 
-  isCompleted(dayIndex, type) {
-    const key = `${dayIndex}_${type}`;
+  isCompleted(dayNumber, type) {
+    const key = `${dayNumber}_${type}`;
     return !!this.state.completed[key];
   }
 
@@ -1215,9 +1258,9 @@ const timeGate = new TimeGatedManager();
 
 class CrosswordEngine {
   constructor() {
-    this.activePuzzle = null;
-    this.activeDayIndex = 0;
+    this.activeDayNumber = 1;
     this.activeType = 'mini';
+    this.activePuzzle = null;
     this.cells = [];
     this.clues = { across: {}, down: {} };
     this.activeCell = { r: 0, c: 0 };
@@ -1227,16 +1270,15 @@ class CrosswordEngine {
     this.gridBuilt = false;
   }
 
-  loadPuzzle(dayIndex, type) {
-    this.activeDayIndex = dayIndex;
-    this.activeType = type;
-    const dayData = PUZZLE_DATA_SETS[dayIndex];
-    if (!dayData || !dayData[type]) {
-      return false;
-    }
+  loadPuzzle(dayNumber, type) {
+    const bundle = timeGate.getPuzzleForDay(dayNumber);
+    if (!bundle || !bundle[type]) return false;
 
-    this.activePuzzle = dayData[type];
+    this.activeDayNumber = dayNumber;
+    this.activeType = type;
+    this.activePuzzle = bundle[type];
     this.clues = this.activePuzzle.clues || { across: {}, down: {} };
+
     this.buildGridMatrix();
     this.restoreProgress();
     this.startTimer();
@@ -1320,7 +1362,7 @@ class CrosswordEngine {
   }
 
   restoreProgress() {
-    const key = `${this.activeDayIndex}_${this.activeType}`;
+    const key = `${this.activeDayNumber}_${this.activeType}`;
     const saved = timeGate.state.savedGrids[key];
     const savedTime = timeGate.state.savedTimes[key];
 
@@ -1340,7 +1382,7 @@ class CrosswordEngine {
   }
 
   saveProgress() {
-    const key = `${this.activeDayIndex}_${this.activeType}`;
+    const key = `${this.activeDayNumber}_${this.activeType}`;
     const flat = [];
     for (let r = 0; r < this.activePuzzle.rows; r++) {
       for (let c = 0; c < this.activePuzzle.cols; c++) {
@@ -1438,7 +1480,7 @@ class CrosswordEngine {
           r++;
         }
       }
-      text = GENERAL_DICTIONARY_CLUES[word] || `Clue for "${word}" (${word.length} letters)`;
+      text = GENERAL_DICTIONARY_CLUES[word] || `Clue for entry "${word}" (${word.length} letters)`;
     }
 
     return {
@@ -1524,6 +1566,8 @@ class CrosswordEngine {
     }
 
     const numbers = Array.from(clueNums).sort((a, b) => a - b);
+    if (numbers.length === 0) return;
+
     const currIdx = numbers.indexOf(Number(activeNum));
     const nextIdx = (currIdx + 1) % numbers.length;
     const targetNum = numbers[nextIdx];
@@ -1558,6 +1602,8 @@ class CrosswordEngine {
     }
 
     const numbers = Array.from(clueNums).sort((a, b) => a - b);
+    if (numbers.length === 0) return;
+
     const currIdx = numbers.indexOf(Number(activeNum));
     const prevIdx = (currIdx - 1 + numbers.length) % numbers.length;
     const targetNum = numbers[prevIdx];
@@ -1658,7 +1704,7 @@ class CrosswordEngine {
 
   handleVictory() {
     this.stopTimer();
-    timeGate.markCompleted(this.activeDayIndex, this.activeType, this.elapsedSeconds);
+    timeGate.markCompleted(this.activeDayNumber, this.activeType, this.elapsedSeconds);
     sound.playWin();
 
     const modal = document.getElementById('modal-victory');
@@ -1684,7 +1730,7 @@ class CrosswordEngine {
     const maxW = (wrapper ? wrapper.clientWidth : 340) - 18;
     const maxH = (wrapper ? wrapper.clientHeight : 340) - 18;
 
-    const cellDim = Math.min(Math.floor(maxW / cols), Math.floor(maxH / rows), 46);
+    const cellDim = Math.min(Math.floor(maxW / cols), Math.floor(maxH / rows), 54);
     document.documentElement.style.setProperty('--cell-dim', `${cellDim}px`);
 
     if (!this.gridBuilt || container.children.length !== (rows * cols)) {
@@ -1782,8 +1828,8 @@ function launchConfetti() {
   const canvas = document.getElementById('victory-canvas');
   if (!canvas || !canvas.parentElement) return;
   const ctx = canvas.getContext('2d');
-  canvas.width = canvas.parentElement.clientWidth;
-  canvas.height = canvas.parentElement.clientHeight;
+  canvas.width = canvas.parentElement.clientWidth || 340;
+  canvas.height = canvas.parentElement.clientHeight || 340;
 
   const particles = [];
   const colors = ['#00e5ff', '#ffbe1a', '#e62243', '#ffffff', '#00e676'];
@@ -1836,6 +1882,7 @@ class UIRouter {
       vault: document.getElementById('screen-vault'),
       puzzle: document.getElementById('screen-puzzle')
     };
+    this.appHeader = document.querySelector('.app-header');
     this.globalHomeBtn = document.getElementById('btn-global-home');
   }
 
@@ -1848,11 +1895,30 @@ class UIRouter {
       this.screens[name].classList.add('active');
     }
 
+    if (this.appHeader) {
+      this.appHeader.classList.toggle('app-header-hidden', name === 'puzzle');
+    }
+
     if (name === 'menu') {
-      if (this.globalHomeBtn) this.globalHomeBtn.classList.add('hidden');
+      if (this.globalHomeBtn) {
+        this.globalHomeBtn.href = "https://tileworksgamesstudio.github.io/Curling-Menu/";
+        const textSpan = this.globalHomeBtn.querySelector('.btn-text');
+        if (textSpan) textSpan.textContent = 'HOME';
+        this.globalHomeBtn.onclick = null;
+      }
       this.refreshMenu();
     } else {
-      if (this.globalHomeBtn) this.globalHomeBtn.classList.remove('hidden');
+      if (this.globalHomeBtn) {
+        this.globalHomeBtn.removeAttribute('href');
+        const textSpan = this.globalHomeBtn.querySelector('.btn-text');
+        if (textSpan) textSpan.textContent = 'MENU';
+        this.globalHomeBtn.onclick = (e) => {
+          e.preventDefault();
+          sound.playBlip();
+          engine.stopTimer();
+          this.showScreen('menu');
+        };
+      }
     }
 
     if (name === 'puzzle') {
@@ -1864,13 +1930,16 @@ class UIRouter {
   }
 
   refreshMenu() {
-    const todayIndex = timeGate.getTodayDayIndex();
-    const puz = PUZZLE_DATA_SETS[todayIndex];
+    const todayNum = timeGate.getTodayDayNumber();
+    const puz = timeGate.getPuzzleForDay(todayNum);
+
+    const editionBadge = document.getElementById('hero-edition-badge');
+    if (editionBadge) editionBadge.textContent = `DAILY EDITION #${todayNum}`;
 
     const releaseSub = document.getElementById('daily-release-date');
     if (releaseSub && puz) {
-      const d = timeGate.getPuzDate(todayIndex);
-      releaseSub.textContent = `${puz.theme} • ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+      const dateStr = puz.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      releaseSub.textContent = `${puz.theme} • ${dateStr}`;
     }
 
     const vaultSub = document.getElementById('vault-count-sub');
@@ -1884,32 +1953,45 @@ class UIRouter {
     const bestMini = document.getElementById('stat-best-mini');
 
     if (streakVal) streakVal.textContent = timeGate.state.streak || '0';
-    if (solvedVal) solvedVal.textContent = `${timeGate.getTotalSolved()}/15`;
+    if (solvedVal) solvedVal.textContent = timeGate.getTotalSolved();
     if (bestMini) bestMini.textContent = timeGate.getBestTime('mini');
   }
 
-  renderDailySubMenu(dayIndex) {
-    const puz = PUZZLE_DATA_SETS[dayIndex];
+  renderDailySubMenu(dayNumber) {
+    const bundle = timeGate.getPuzzleForDay(dayNumber);
     const titleElem = document.getElementById('daily-sub-title');
     const dateElem = document.getElementById('daily-sub-date');
 
-    const d = timeGate.getPuzDate(dayIndex);
-    if (titleElem) titleElem.textContent = puz.theme.toUpperCase();
-    if (dateElem) dateElem.textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    if (titleElem) titleElem.textContent = bundle.theme.toUpperCase();
+    if (dateElem) dateElem.textContent = bundle.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+    const titleFull = document.getElementById('tier-title-full');
+    const titleMidi = document.getElementById('tier-title-midi');
+    const titleMini = document.getElementById('tier-title-mini');
+
+    if (titleFull) titleFull.textContent = `Classic Crossword (15×15)`;
+    if (titleMidi) titleMidi.textContent = `Midi Crossword (9×9)`;
+    if (titleMini) titleMini.textContent = `Mini Crossword (5×5)`;
+
+    const tierLabels = {
+      full: 'CLASSIC 15×15',
+      midi: 'MIDI 9×9',
+      mini: 'MINI 5×5'
+    };
 
     ['full', 'midi', 'mini'].forEach(type => {
       const badge = document.getElementById(`status-${type}`);
       const btn = document.querySelector(`.tier-play-btn[data-type="${type}"]`);
       if (badge && btn) {
-        btn.dataset.day = dayIndex;
-        if (timeGate.isCompleted(dayIndex, type)) {
+        btn.dataset.day = dayNumber;
+        if (timeGate.isCompleted(dayNumber, type)) {
           badge.textContent = 'SOLVED';
           badge.classList.add('solved');
-          btn.textContent = 'REVIEW';
+          btn.textContent = `REVIEW ${tierLabels[type]}`;
         } else {
           badge.textContent = 'READY';
           badge.classList.remove('solved');
-          btn.textContent = `PLAY ${type === 'full' ? 'CLASSIC' : type.toUpperCase()}`;
+          btn.textContent = `PLAY ${tierLabels[type]}`;
         }
       }
     });
@@ -1929,30 +2011,28 @@ class UIRouter {
         <div class="vault-empty-note neo-card">
           <p>No past puzzles in the archive yet.</p>
           <p style="margin-top: 6px; font-size: 11px; opacity: 0.85;">
-            Past daily slates will appear here automatically.
+            Past daily editions will automatically accumulate here.
           </p>
         </div>
       `;
       return;
     }
 
-    pastPuzzles.forEach(dayData => {
+    pastPuzzles.forEach(bundle => {
       const card = document.createElement('div');
       card.className = 'tier-card neo-card';
-
-      const d = timeGate.getPuzDate(dayData.dayIndex);
-      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const dateStr = bundle.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
       card.innerHTML = `
         <div class="tier-header-row">
-          <span class="tier-badge size-midi">ARCHIVE</span>
+          <span class="tier-badge size-midi">EDITION #${bundle.dayNumber}</span>
           <span class="tier-meta-time">${dateStr}</span>
         </div>
-        <h3 class="tier-title">${dayData.theme}</h3>
+        <h3 class="tier-title">${bundle.theme}</h3>
         <div style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
-          <button class="neo-btn small-btn primary-btn vault-play-btn" data-day="${dayData.dayIndex}" data-type="full">CLASSIC 15×15</button>
-          <button class="neo-btn small-btn secondary-btn vault-play-btn" data-day="${dayData.dayIndex}" data-type="midi">MIDI 9×9</button>
-          <button class="neo-btn small-btn vault-play-btn" data-day="${dayData.dayIndex}" data-type="mini">MINI 5×5</button>
+          <button class="neo-btn small-btn primary-btn vault-play-btn" data-day="${bundle.dayNumber}" data-type="full">CLASSIC 15×15</button>
+          <button class="neo-btn small-btn secondary-btn vault-play-btn" data-day="${bundle.dayNumber}" data-type="midi">MIDI 9×9</button>
+          <button class="neo-btn small-btn vault-play-btn" data-day="${bundle.dayNumber}" data-type="mini">MINI 5×5</button>
         </div>
       `;
       list.appendChild(card);
@@ -1967,15 +2047,21 @@ class UIRouter {
     });
   }
 
-  launchGame(dayIndex, type) {
-    if (engine.loadPuzzle(dayIndex, type)) {
-      const puz = PUZZLE_DATA_SETS[dayIndex];
+  launchGame(dayNumber, type) {
+    if (engine.loadPuzzle(dayNumber, type)) {
+      const bundle = timeGate.getPuzzleForDay(dayNumber);
       const titleElem = document.getElementById('game-puzzle-title');
       const tierElem = document.getElementById('game-puzzle-tier');
 
+      const dimensionLabels = {
+        full: '15×15',
+        midi: '9×9',
+        mini: '5×5'
+      };
+
       const typeLabel = type === 'full' ? 'CLASSIC 15×15' : type === 'midi' ? 'MIDI 9×9' : 'MINI 5×5';
-      if (titleElem) titleElem.textContent = puz[type].title;
-      if (tierElem) tierElem.textContent = `${typeLabel} • ${puz.theme}`;
+      if (titleElem) titleElem.textContent = bundle[type].title;
+      if (tierElem) tierElem.textContent = `${dimensionLabels[type]} • ${bundle.theme}`;
 
       this.showScreen('puzzle');
     }
@@ -1988,14 +2074,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnDaily = document.getElementById('btn-menu-daily');
   const btnVault = document.getElementById('btn-menu-vault');
   const btnRules = document.getElementById('btn-menu-rules');
-  const btnGlobalHome = document.getElementById('btn-global-home');
   const btnGameBack = document.getElementById('btn-game-back');
 
   if (btnDaily) {
     btnDaily.addEventListener('click', () => {
       sound.playBlip();
-      const todayIndex = timeGate.getTodayDayIndex();
-      router.renderDailySubMenu(todayIndex);
+      const todayNum = timeGate.getTodayDayNumber();
+      router.renderDailySubMenu(todayNum);
     });
   }
 
@@ -2014,28 +2099,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (btnGlobalHome) {
-    btnGlobalHome.addEventListener('click', () => {
-      sound.playBlip();
-      engine.stopTimer();
-      router.showScreen('menu');
-    });
-  }
-
   if (btnGameBack) {
     btnGameBack.addEventListener('click', () => {
       sound.playBlip();
       engine.stopTimer();
-      router.renderDailySubMenu(engine.activeDayIndex);
+      router.renderDailySubMenu(engine.activeDayNumber);
     });
   }
 
-  document.querySelectorAll('.back-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+  const btnBackFromSub = document.getElementById('btn-back-from-sub');
+  if (btnBackFromSub) {
+    btnBackFromSub.addEventListener('click', () => {
       sound.playBlip();
       router.showScreen('menu');
     });
-  });
+  }
+
+  const btnBackFromVault = document.getElementById('btn-back-from-vault');
+  if (btnBackFromVault) {
+    btnBackFromVault.addEventListener('click', () => {
+      sound.playBlip();
+      router.showScreen('menu');
+    });
+  }
 
   document.querySelectorAll('.tier-play-btn').forEach(btn => {
     btn.addEventListener('click', () => {

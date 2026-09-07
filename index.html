@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="description" content="Daily Crossword: Solve daily Classic, Midi, and Mini crosswords.">
+  <meta name="description" content="Daily Crossword: Solve daily Classic 15×15, Midi 9×9, and Mini 5×5 crosswords.">
   <meta name="theme-color" content="#040a14">
   <title>Daily Crossword</title>
   <link rel="stylesheet" href="style.css">
@@ -15,10 +15,10 @@
 
     <header class="app-header neo-card">
       <div class="header-left">
-        <button id="btn-global-home" class="neo-btn small-btn hidden" title="Back to Main Menu" aria-label="Main Menu">
+        <a id="btn-global-home" class="neo-btn small-btn" href="https://tileworksgamesstudio.github.io/Curling-Menu/" title="Return to Curling Games Home" aria-label="Curling Games Home Menu">
           <span class="btn-icon">🏠</span>
-          <span class="btn-text">MENU</span>
-        </button>
+          <span class="btn-text">HOME</span>
+        </a>
         <div class="header-brand">
           <span class="brand-icon">✏️</span>
           <div class="brand-text-block">
@@ -41,7 +41,7 @@
     <main id="screen-main-menu" class="screen-view active">
       <section class="menu-hero neo-card">
         <div class="hero-badge-row">
-          <span class="hero-badge">DAILY EDITION</span>
+          <span class="hero-badge" id="hero-edition-badge">DAILY EDITION</span>
           <span class="hero-subbadge">OFFICIAL GRIDS</span>
         </div>
         <h1 class="hero-title">DAILY CROSSWORDS</h1>
@@ -65,7 +65,7 @@
           </div>
           <div class="stat-content">
             <span class="stat-label">SOLVED</span>
-            <strong id="stat-solved-val" class="stat-val">0/15</strong>
+            <strong id="stat-solved-val" class="stat-val">0</strong>
           </div>
         </div>
         <div class="stat-divider"></div>
@@ -117,12 +117,16 @@
           <span class="pulse-dot"></span>
           <span>New daily puzzles released every day at midnight</span>
         </div>
+        <a class="home-menu-link" href="https://tileworksgamesstudio.github.io/Curling-Menu/" aria-label="Return to the Curling Games home menu">
+          <span aria-hidden="true">⌂</span>
+          <span>RETURN TO HOME</span>
+        </a>
       </footer>
     </main>
 
     <section id="screen-daily-sub" class="screen-view">
       <div class="view-header neo-card">
-        <button class="neo-btn back-btn" data-target="screen-main-menu">← MENU</button>
+        <button class="neo-btn back-btn" id="btn-back-from-sub">← MENU</button>
         <div class="view-title-group">
           <h2 class="view-title" id="daily-sub-title">TODAY'S PUZZLES</h2>
           <span class="view-date-badge" id="daily-sub-date">Date</span>
@@ -135,11 +139,11 @@
             <span class="tier-badge size-full">15×15 CLASSIC</span>
             <span id="status-full" class="status-pill">READY</span>
           </div>
-          <h3 class="tier-title">Classic Crossword</h3>
+          <h3 class="tier-title" id="tier-title-full">Classic Crossword (15×15)</h3>
           <p class="tier-desc">Traditional 15×15 tournament-grade grid featuring intersecting clues and balanced themes.</p>
           <div class="tier-footer-row">
             <span class="tier-meta-time" id="meta-time-full">Est. 8–15 min</span>
-            <button class="neo-btn tier-play-btn primary-btn" data-type="full">PLAY CLASSIC</button>
+            <button class="neo-btn tier-play-btn primary-btn" data-type="full">PLAY CLASSIC 15×15</button>
           </div>
         </article>
 
@@ -148,11 +152,11 @@
             <span class="tier-badge size-midi">9×9 MIDI</span>
             <span id="status-midi" class="status-pill">READY</span>
           </div>
-          <h3 class="tier-title">Midi Crossword</h3>
+          <h3 class="tier-title" id="tier-title-midi">Midi Crossword (9×9)</h3>
           <p class="tier-desc">Mid-sized 9×9 puzzle designed for a brisk mental workout during a coffee break.</p>
           <div class="tier-footer-row">
             <span class="tier-meta-time" id="meta-time-midi">Est. 3–6 min</span>
-            <button class="neo-btn tier-play-btn primary-btn" data-type="midi">PLAY MIDI</button>
+            <button class="neo-btn tier-play-btn primary-btn" data-type="midi">PLAY MIDI 9×9</button>
           </div>
         </article>
 
@@ -161,11 +165,11 @@
             <span class="tier-badge size-mini">5×5 MINI</span>
             <span id="status-mini" class="status-pill">READY</span>
           </div>
-          <h3 class="tier-title">Mini Crossword</h3>
+          <h3 class="tier-title" id="tier-title-mini">Mini Crossword (5×5)</h3>
           <p class="tier-desc">Fast and dense 5×5 sprint. Solve all five across and down entries in under two minutes.</p>
           <div class="tier-footer-row">
             <span class="tier-meta-time" id="meta-time-mini">Est. 1–2 min</span>
-            <button class="neo-btn tier-play-btn primary-btn" data-type="mini">PLAY MINI</button>
+            <button class="neo-btn tier-play-btn primary-btn" data-type="mini">PLAY MINI 5×5</button>
           </div>
         </article>
       </div>
@@ -173,7 +177,7 @@
 
     <section id="screen-vault" class="screen-view">
       <div class="view-header neo-card">
-        <button class="neo-btn back-btn" data-target="screen-main-menu">← MENU</button>
+        <button class="neo-btn back-btn" id="btn-back-from-vault">← MENU</button>
         <div class="view-title-group">
           <h2 class="view-title">PUZZLE ARCHIVE</h2>
           <span class="view-date-badge">PAST EDITIONS</span>
@@ -190,8 +194,9 @@
         <div class="game-info">
           <button id="btn-game-back" class="neo-btn small-btn" title="Back to Puzzles">← BACK</button>
           <div class="game-title-group">
+            <span class="game-title-kicker">DAILY CROSSWORD</span>
             <span id="game-puzzle-title" class="game-title">Crossword</span>
-            <span id="game-puzzle-tier" class="game-tier-tag">15×15</span>
+            <span id="game-puzzle-tier" class="game-tier-tag">GRID</span>
           </div>
         </div>
 
@@ -207,6 +212,10 @@
         </div>
       </div>
 
+      <div class="grid-scroll-wrapper" id="grid-wrapper">
+        <div id="crossword-grid-container" class="grid-container"></div>
+      </div>
+
       <div class="active-clue-bar neo-card" id="clue-bar" title="Tap to toggle Across and Down">
         <button id="btn-prev-clue" class="clue-nav-btn neo-btn icon-only" title="Previous Clue">◀</button>
         <div class="clue-content" id="clue-display">
@@ -215,10 +224,6 @@
           <span id="clue-text-label" class="clue-text">Select any square to inspect clues...</span>
         </div>
         <button id="btn-next-clue" class="clue-nav-btn neo-btn icon-only" title="Next Clue">▶</button>
-      </div>
-
-      <div class="grid-scroll-wrapper" id="grid-wrapper">
-        <div id="crossword-grid-container" class="grid-container"></div>
       </div>
 
       <div class="virtual-keyboard neo-card" id="custom-keyboard" aria-label="Virtual Keyboard">
