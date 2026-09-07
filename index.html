@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="Daily Crossword: Solve daily Classic, Midi, and Mini crosswords.">
+  <meta name="theme-color" content="#040a14">
+  <title>Daily Crossword</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="spotlight-layer" aria-hidden="true"></div>
+
+  <div id="app" class="app-container">
+
+    <header class="app-header neo-card">
+      <div class="header-left">
+        <button id="btn-global-home" class="neo-btn small-btn hidden" title="Back to Main Menu" aria-label="Main Menu">
+          <span class="btn-icon">🏠</span>
+          <span class="btn-text">MENU</span>
+        </button>
+        <div class="header-brand">
+          <span class="brand-icon">✏️</span>
+          <div class="brand-text-block">
+            <span class="brand-title">DAILY CROSSWORD</span>
+            <span class="brand-sub">CLASSIC • MIDI • MINI</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <button id="btn-sound-toggle" class="neo-btn small-btn icon-only" title="Toggle Sound" aria-label="Toggle Sound">
+          <span id="sound-icon">🔊</span>
+        </button>
+        <button id="btn-open-settings" class="neo-btn small-btn icon-only" title="Settings" aria-label="Settings">
+          <span>⚙️</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="screen-main-menu" class="screen-view active">
+      <section class="menu-hero neo-card">
+        <div class="hero-badge-row">
+          <span class="hero-badge">DAILY EDITION</span>
+          <span class="hero-subbadge">OFFICIAL GRIDS</span>
+        </div>
+        <h1 class="hero-title">DAILY CROSSWORDS</h1>
+        <p class="hero-subtitle">Solve today's Classic 15×15, Midi 9×9, and Mini 5×5 puzzles.</p>
+      </section>
+
+      <section class="player-stats-strip neo-card">
+        <div class="stat-pill">
+          <div class="stat-icon-wrap">
+            <span class="stat-icon">🔥</span>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">STREAK</span>
+            <strong id="stat-streak-val" class="stat-val">0</strong>
+          </div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-pill">
+          <div class="stat-icon-wrap">
+            <span class="stat-icon">🎯</span>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">SOLVED</span>
+            <strong id="stat-solved-val" class="stat-val">0/15</strong>
+          </div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-pill">
+          <div class="stat-icon-wrap">
+            <span class="stat-icon">⏱️</span>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">BEST MINI</span>
+            <strong id="stat-best-mini" class="stat-val">--:--</strong>
+          </div>
+        </div>
+      </section>
+
+      <nav class="menu-actions" aria-label="Game navigation">
+        <button id="btn-menu-daily" class="neo-btn large-action-btn primary-btn">
+          <div class="btn-content">
+            <span class="action-icon">📅</span>
+            <div class="action-text-group">
+              <div class="action-headline">
+                <span class="action-label">TODAY'S PUZZLES</span>
+                <span class="action-tag-pill">ACTIVE</span>
+              </div>
+              <span class="action-sub" id="daily-release-date">Loading Today's Puzzles...</span>
+            </div>
+          </div>
+          <span class="action-arrow">➔</span>
+        </button>
+
+        <button id="btn-menu-vault" class="neo-btn large-action-btn secondary-btn">
+          <div class="btn-content">
+            <span class="action-icon">📚</span>
+            <div class="action-text-group">
+              <span class="action-label">PUZZLE ARCHIVE</span>
+              <span class="action-sub" id="vault-count-sub">Past Daily Editions</span>
+            </div>
+          </div>
+          <span class="action-arrow">➔</span>
+        </button>
+
+        <button id="btn-menu-rules" class="neo-btn medium-btn rules-btn">
+          <span class="action-icon">📖</span>
+          <span>HOW TO PLAY & CONTROLS</span>
+        </button>
+      </nav>
+
+      <footer class="menu-footer neo-card">
+        <div class="footer-status">
+          <span class="pulse-dot"></span>
+          <span>New daily puzzles released every day at midnight</span>
+        </div>
+      </footer>
+    </main>
+
+    <section id="screen-daily-sub" class="screen-view">
+      <div class="view-header neo-card">
+        <button class="neo-btn back-btn" data-target="screen-main-menu">← MENU</button>
+        <div class="view-title-group">
+          <h2 class="view-title" id="daily-sub-title">TODAY'S PUZZLES</h2>
+          <span class="view-date-badge" id="daily-sub-date">Date</span>
+        </div>
+      </div>
+
+      <div class="tier-grid">
+        <article class="tier-card neo-card" id="tier-card-full">
+          <div class="tier-header-row">
+            <span class="tier-badge size-full">15×15 CLASSIC</span>
+            <span id="status-full" class="status-pill">READY</span>
+          </div>
+          <h3 class="tier-title">Classic Crossword</h3>
+          <p class="tier-desc">Traditional 15×15 tournament-grade grid featuring intersecting clues and balanced themes.</p>
+          <div class="tier-footer-row">
+            <span class="tier-meta-time" id="meta-time-full">Est. 8–15 min</span>
+            <button class="neo-btn tier-play-btn primary-btn" data-type="full">PLAY CLASSIC</button>
+          </div>
+        </article>
+
+        <article class="tier-card neo-card" id="tier-card-midi">
+          <div class="tier-header-row">
+            <span class="tier-badge size-midi">9×9 MIDI</span>
+            <span id="status-midi" class="status-pill">READY</span>
+          </div>
+          <h3 class="tier-title">Midi Crossword</h3>
+          <p class="tier-desc">Mid-sized 9×9 puzzle designed for a brisk mental workout during a coffee break.</p>
+          <div class="tier-footer-row">
+            <span class="tier-meta-time" id="meta-time-midi">Est. 3–6 min</span>
+            <button class="neo-btn tier-play-btn primary-btn" data-type="midi">PLAY MIDI</button>
+          </div>
+        </article>
+
+        <article class="tier-card neo-card" id="tier-card-mini">
+          <div class="tier-header-row">
+            <span class="tier-badge size-mini">5×5 MINI</span>
+            <span id="status-mini" class="status-pill">READY</span>
+          </div>
+          <h3 class="tier-title">Mini Crossword</h3>
+          <p class="tier-desc">Fast and dense 5×5 sprint. Solve all five across and down entries in under two minutes.</p>
+          <div class="tier-footer-row">
+            <span class="tier-meta-time" id="meta-time-mini">Est. 1–2 min</span>
+            <button class="neo-btn tier-play-btn primary-btn" data-type="mini">PLAY MINI</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="screen-vault" class="screen-view">
+      <div class="view-header neo-card">
+        <button class="neo-btn back-btn" data-target="screen-main-menu">← MENU</button>
+        <div class="view-title-group">
+          <h2 class="view-title">PUZZLE ARCHIVE</h2>
+          <span class="view-date-badge">PAST EDITIONS</span>
+        </div>
+      </div>
+      <p class="vault-info-banner neo-card">
+        Select any archived daily edition below to replay or review past crosswords.
+      </p>
+      <div id="vault-list" class="vault-container"></div>
+    </section>
+
+    <section id="screen-puzzle" class="screen-view">
+      <div class="game-control-bar neo-card">
+        <div class="game-info">
+          <button id="btn-game-back" class="neo-btn small-btn" title="Back to Puzzles">← BACK</button>
+          <div class="game-title-group">
+            <span id="game-puzzle-title" class="game-title">Crossword</span>
+            <span id="game-puzzle-tier" class="game-tier-tag">15×15</span>
+          </div>
+        </div>
+
+        <div class="game-stats">
+          <div class="timer-badge neo-card-inset">
+            <span class="timer-icon">⏱️</span>
+            <span id="game-timer">00:00</span>
+          </div>
+          <div class="tools-group">
+            <button id="btn-check-word" class="neo-btn tool-btn" title="Check Current Word">CHECK</button>
+            <button id="btn-reveal-word" class="neo-btn tool-btn" title="Reveal Current Word">REVEAL</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="active-clue-bar neo-card" id="clue-bar" title="Tap to toggle Across and Down">
+        <button id="btn-prev-clue" class="clue-nav-btn neo-btn icon-only" title="Previous Clue">◀</button>
+        <div class="clue-content" id="clue-display">
+          <span id="clue-dir-label" class="clue-dir-pill">ACROSS</span>
+          <span id="clue-number-label" class="clue-number">1A</span>
+          <span id="clue-text-label" class="clue-text">Select any square to inspect clues...</span>
+        </div>
+        <button id="btn-next-clue" class="clue-nav-btn neo-btn icon-only" title="Next Clue">▶</button>
+      </div>
+
+      <div class="grid-scroll-wrapper" id="grid-wrapper">
+        <div id="crossword-grid-container" class="grid-container"></div>
+      </div>
+
+      <div class="virtual-keyboard neo-card" id="custom-keyboard" aria-label="Virtual Keyboard">
+        <div class="keyboard-row">
+          <button class="key-btn" data-key="Q">Q</button>
+          <button class="key-btn" data-key="W">W</button>
+          <button class="key-btn" data-key="E">E</button>
+          <button class="key-btn" data-key="R">R</button>
+          <button class="key-btn" data-key="T">T</button>
+          <button class="key-btn" data-key="Y">Y</button>
+          <button class="key-btn" data-key="U">U</button>
+          <button class="key-btn" data-key="I">I</button>
+          <button class="key-btn" data-key="O">O</button>
+          <button class="key-btn" data-key="P">P</button>
+        </div>
+        <div class="keyboard-row">
+          <button class="key-btn" data-key="A">A</button>
+          <button class="key-btn" data-key="S">S</button>
+          <button class="key-btn" data-key="D">D</button>
+          <button class="key-btn" data-key="F">F</button>
+          <button class="key-btn" data-key="G">G</button>
+          <button class="key-btn" data-key="H">H</button>
+          <button class="key-btn" data-key="J">J</button>
+          <button class="key-btn" data-key="K">K</button>
+          <button class="key-btn" data-key="L">L</button>
+        </div>
+        <div class="keyboard-row">
+          <button class="key-btn action-key dir-key" data-key="TOGGLE" title="Toggle Direction">⟲ DIR</button>
+          <button class="key-btn" data-key="Z">Z</button>
+          <button class="key-btn" data-key="X">X</button>
+          <button class="key-btn" data-key="C">C</button>
+          <button class="key-btn" data-key="V">V</button>
+          <button class="key-btn" data-key="B">B</button>
+          <button class="key-btn" data-key="N">N</button>
+          <button class="key-btn" data-key="M">M</button>
+          <button class="key-btn action-key backspace-key" data-key="BACKSPACE" title="Delete">⌫</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="modal-settings" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="modal-card neo-card">
+        <div class="modal-header">
+          <h3 class="modal-title" id="settings-title">SETTINGS</h3>
+          <button class="neo-btn small-btn close-modal-btn" aria-label="Close settings">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="setting-row">
+            <div>
+              <label for="setting-sound" class="setting-label-bold">Sound Effects</label>
+              <div class="setting-note">Audio cues for keystrokes and completions</div>
+            </div>
+            <input type="checkbox" id="setting-sound" checked class="neo-toggle">
+          </div>
+
+          <hr class="neo-divider">
+
+          <div class="setting-block">
+            <h4 class="setting-heading">Saved Data</h4>
+            <p class="setting-note">
+              Clear your local completion history, best times, and streaks on this device.
+            </p>
+            <button id="btn-reset-storage" class="neo-btn danger-btn full-width">RESET PROGRESS</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-rules" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+      <div class="modal-card neo-card">
+        <div class="modal-header">
+          <h3 class="modal-title" id="rules-title">HOW TO PLAY</h3>
+          <button class="neo-btn small-btn close-modal-btn" aria-label="Close rules">✕</button>
+        </div>
+        <div class="modal-body modal-scrollable">
+          <h4 class="rule-section-head">Crossword Rules</h4>
+          <p>• Fill in the white squares with letters to form words corresponding to the Across and Down clues.</p>
+          <p>• Black squares separate distinct words.</p>
+          <p>• Every letter where an Across word intersects a Down word must be valid for both clues.</p>
+
+          <h4 class="rule-section-head">Navigation & Controls</h4>
+          <p>• <strong>Select a Square:</strong> Tap any white square to select it.</p>
+          <p>• <strong>Toggle Direction:</strong> Tap the selected square again, tap the <strong>DIR</strong> key, or tap the Clue Bar to switch between Across and Down.</p>
+          <p>• <strong>Typing:</strong> Use the on-screen keyboard or physical keyboard keys to enter letters. Typing advances automatically to the next square in the active word.</p>
+          <p>• <strong>Deleting:</strong> Press <strong>⌫</strong> (Backspace) to clear the active letter or step backward.</p>
+          <p>• <strong>Clue Navigation:</strong> Tap <strong>◀</strong> or <strong>▶</strong> on the clue bar, or use <strong>Tab</strong> / <strong>Shift+Tab</strong> on physical keyboards to cycle through clues.</p>
+
+          <h4 class="rule-section-head">Assistance Tools</h4>
+          <p>• <strong>CHECK:</strong> Highlights any incorrect letters in the active word with a brief red shake.</p>
+          <p>• <strong>REVEAL:</strong> Solves and fills the correct letters for the active word if you are stuck.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-victory" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="victory-heading">
+      <div class="modal-card neo-card victory-card">
+        <canvas id="victory-canvas" class="confetti-canvas"></canvas>
+        <div class="victory-stamp">CONGRATULATIONS!</div>
+        <h2 class="victory-title" id="victory-heading">PUZZLE COMPLETE</h2>
+        <p class="victory-sub" id="victory-tier-label">All clues correctly solved</p>
+
+        <div class="victory-stats neo-card-inset">
+          <div class="stat-box">
+            <span class="stat-num" id="victory-time">00:00</span>
+            <span class="stat-label">TIME</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-num" id="victory-score">100%</span>
+            <span class="stat-label">ACCURACY</span>
+          </div>
+        </div>
+
+        <button id="btn-victory-continue" class="neo-btn primary-btn full-width">CONTINUE</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
