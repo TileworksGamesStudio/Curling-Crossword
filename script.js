@@ -582,7 +582,7 @@ const PUZZLE_DATA_SETS = [
         }
       }
     }
-  }
+  },
   {
     id: "day-3",
     dayIndex: 2,
@@ -1133,7 +1133,6 @@ const PUZZLE_DATA_SETS = [
       }
     }
   }
-];
 ];
 
 class TimeGatedManager {
