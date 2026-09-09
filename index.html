@@ -2,346 +2,284 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="description" content="Daily Crossword: Solve daily Classic 15×15, Midi 9×9, and Mini 5×5 crosswords.">
-  <meta name="theme-color" content="#040a14">
-  <title>Daily Crossword</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Curling Crosswords — Daily Curling Puzzles</title>
+  <meta name="description" content="Daily curling crosswords in Mini 4x4, Midi 6x6, and Main 10x10 sizes. Master curling terminology, Canadian lore, and game strategy.">
+  <meta name="theme-color" content="#f2fafd">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="spotlight-layer" aria-hidden="true"></div>
+  <!-- Ambient Ice Sheet & Collision Physics Canvas -->
+  <canvas id="ambient-ice-canvas" aria-hidden="true"></canvas>
 
-  <div id="app" class="app-container">
-
-    <header class="app-header neo-card">
+  <div class="app-shell" id="app">
+    <!-- Header Navigation -->
+    <header class="app-header glass-panel">
       <div class="header-left">
-        <a id="btn-global-home" class="neo-btn small-btn" href="https://tileworksgamesstudio.github.io/Curling-Menu/" title="Return to Curling Games Home" aria-label="Curling Games Home Menu">
-          <span class="btn-icon">🏠</span>
-          <span class="btn-text">HOME</span>
-        </a>
-        <div class="header-brand">
-          <span class="brand-icon">✏️</span>
-          <div class="brand-text-block">
-            <span class="brand-title">DAILY CROSSWORD</span>
-            <span class="brand-sub">CLASSIC • MIDI • MINI</span>
-          </div>
+        <button id="btn-nav-menu" class="nav-btn" aria-label="Open Main Menu">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          <span class="btn-label">Menu</span>
+        </button>
+      </div>
+
+      <div class="header-center">
+        <div class="brand-badge">
+          <svg class="mini-stone-icon" viewBox="0 0 32 32" width="20" height="20" aria-hidden="true">
+            <ellipse cx="16" cy="18" rx="13" ry="8" fill="#a4b3c2" stroke="#153b5d" stroke-width="1.8"/>
+            <path d="M6 18 C6 13 26 13 26 18" fill="#8f9ca8"/>
+            <rect x="12" y="6" width="8" height="4.5" rx="2" fill="#d63b3b" stroke="#102f4a" stroke-width="1"/>
+            <path d="M16 10.5 L16 14" stroke="#d63b3b" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          <span class="header-title">Curling Crosswords</span>
         </div>
       </div>
 
       <div class="header-right">
-        <button id="btn-sound-toggle" class="neo-btn small-btn icon-only" title="Toggle Sound" aria-label="Toggle Sound">
-          <span id="sound-icon">🔊</span>
-        </button>
-        <button id="btn-open-settings" class="neo-btn small-btn icon-only" title="Settings" aria-label="Settings">
-          <span>⚙️</span>
+        <button id="btn-sound-toggle" class="nav-btn icon-only" aria-label="Sound Toggle" title="Sound Toggle">
+          <svg id="sound-icon-on" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+          <svg id="sound-icon-off" class="hidden" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
         </button>
       </div>
     </header>
 
-    <main id="screen-main-menu" class="screen-view active">
-      <section class="menu-hero neo-card">
-        <div class="hero-badge-row">
-          <span class="hero-badge" id="hero-edition-badge">DAILY EDITION</span>
-          <span class="hero-subbadge">OFFICIAL GRIDS</span>
-        </div>
-        <h1 class="hero-title">DAILY CROSSWORDS</h1>
-        <p class="hero-subtitle">Solve today's Classic 15×15, Midi 9×9, and Mini 5×5 puzzles.</p>
-      </section>
+    <!-- Main Screens Container -->
+    <main class="app-main">
+      
+      <!-- SCREEN: MAIN MENU -->
+      <section id="screen-menu" class="screen active" aria-labelledby="menu-heading">
+        <div class="menu-container">
+          <div class="hero-brand">
+            <div class="sheet-emblem">
+              <div class="house-ring ring-outer"></div>
+              <div class="house-ring ring-middle"></div>
+              <div class="house-ring ring-button"></div>
+              <svg class="sheet-stone" viewBox="0 0 36 36" width="46" height="46" aria-hidden="true">
+                <ellipse cx="18" cy="21" rx="14" ry="9" fill="#a4b3c2" stroke="#153b5d" stroke-width="2"/>
+                <path d="M7 21 C7 14 29 14 29 21" fill="#8f9ca8"/>
+                <ellipse cx="18" cy="18" rx="8" ry="4" fill="#ffffff" opacity="0.6"/>
+                <path d="M13 8 L23 8 C24.5 8 24.5 11.5 21 11.5 L18 11.5 L18 15.5" fill="none" stroke="#d63b3b" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h1 id="menu-heading" class="game-title">Curling Crosswords</h1>
+            <p class="game-subtitle">The Daily Rink Puzzle</p>
+          </div>
 
-      <section class="player-stats-strip neo-card">
-        <div class="stat-pill">
-          <div class="stat-icon-wrap">
-            <span class="stat-icon">🔥</span>
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">STREAK</span>
-            <strong id="stat-streak-val" class="stat-val">0</strong>
-          </div>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-pill">
-          <div class="stat-icon-wrap">
-            <span class="stat-icon">🎯</span>
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">SOLVED</span>
-            <strong id="stat-solved-val" class="stat-val">0</strong>
-          </div>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-pill">
-          <div class="stat-icon-wrap">
-            <span class="stat-icon">⏱️</span>
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">BEST MINI</span>
-            <strong id="stat-best-mini" class="stat-val">--:--</strong>
-          </div>
-        </div>
-      </section>
-
-      <nav class="menu-actions" aria-label="Game navigation">
-        <button id="btn-menu-daily" class="neo-btn large-action-btn primary-btn">
-          <div class="btn-content">
-            <span class="action-icon">📅</span>
-            <div class="action-text-group">
-              <div class="action-headline">
-                <span class="action-label">TODAY'S PUZZLES</span>
-                <span class="action-tag-pill">ACTIVE</span>
+          <!-- Daily Card: Mini, Midi, Main -->
+          <div class="glass-card hero-card">
+            <div class="card-header-row">
+              <div class="tag-today">
+                <span class="pulse-dot"></span>
+                <span>Today’s Boards</span>
               </div>
-              <span class="action-sub" id="daily-release-date">Loading Today's Puzzles...</span>
+              <span id="menu-today-date" class="date-label">September 8, 2026</span>
+            </div>
+
+            <div class="size-selector-pills" role="tablist" aria-label="Puzzle size selection">
+              <button class="pill-btn active" role="tab" aria-selected="true" data-size="mini">
+                <span class="pill-title">Mini</span>
+                <span class="pill-dim">4×4</span>
+                <span class="pill-status" id="status-badge-mini">Play</span>
+              </button>
+              <button class="pill-btn" role="tab" aria-selected="false" data-size="midi">
+                <span class="pill-title">Midi</span>
+                <span class="pill-dim">6×6</span>
+                <span class="pill-status" id="status-badge-midi">Play</span>
+              </button>
+              <button class="pill-btn" role="tab" aria-selected="false" data-size="main">
+                <span class="pill-title">Main</span>
+                <span class="pill-dim">10×10</span>
+                <span class="pill-status" id="status-badge-main">Play</span>
+              </button>
+            </div>
+
+            <div class="hero-preview-info">
+              <div id="selected-info-title" class="info-title">Mini Crossword</div>
+              <p id="selected-info-desc" class="info-sub">A fast 4×4 sheet challenge to warm up your delivery.</p>
+            </div>
+
+            <button id="btn-play-today" class="btn btn-primary btn-large">
+              <span class="btn-text">Play Today</span>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+          </div>
+
+          <!-- Secondary Menu Navigation -->
+          <div class="menu-action-grid">
+            <button id="btn-open-vault" class="btn btn-glass">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              <span>Vault Archive</span>
+            </button>
+            <a id="btn-open-home" href="https://tileworksgamesstudio.github.io/Curling-Menu/" class="btn btn-glass" target="_self" rel="noopener">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+              <span>Curling Menu</span>
+            </a>
+          </div>
+
+          <!-- Streak & Stats Strip -->
+          <div class="stats-strip glass-panel-compact">
+            <div class="stat-col">
+              <span class="stat-val" id="stat-streak">0</span>
+              <span class="stat-lbl">Streak</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-col">
+              <span class="stat-val" id="stat-completed">0</span>
+              <span class="stat-lbl">Completed</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-col">
+              <span class="stat-val" id="stat-vault-count">0</span>
+              <span class="stat-lbl">In Vault</span>
             </div>
           </div>
-          <span class="action-arrow">➔</span>
-        </button>
-
-        <button id="btn-menu-vault" class="neo-btn large-action-btn secondary-btn">
-          <div class="btn-content">
-            <span class="action-icon">📚</span>
-            <div class="action-text-group">
-              <span class="action-label">PUZZLE ARCHIVE</span>
-              <span class="action-sub" id="vault-count-sub">Past Daily Editions</span>
-            </div>
-          </div>
-          <span class="action-arrow">➔</span>
-        </button>
-
-        <button id="btn-menu-rules" class="neo-btn medium-btn rules-btn">
-          <span class="action-icon">📖</span>
-          <span>HOW TO PLAY & CONTROLS</span>
-        </button>
-      </nav>
-
-      <footer class="menu-footer neo-card">
-        <div class="footer-status">
-          <span class="pulse-dot"></span>
-          <span>New daily puzzles released every day at midnight</span>
         </div>
-        <a class="home-menu-link" href="https://tileworksgamesstudio.github.io/Curling-Menu/" aria-label="Return to the Curling Games home menu">
-          <span aria-hidden="true">⌂</span>
-          <span>RETURN TO HOME</span>
-        </a>
-      </footer>
+      </section>
+
+      <!-- SCREEN: GAMEPLAY -->
+      <section id="screen-game" class="screen" aria-label="Active Game Board">
+        <div class="game-wrapper">
+          <!-- Game Top Bar -->
+          <div class="game-action-bar">
+            <button id="btn-game-back" class="btn-control-secondary" aria-label="Back to Menu">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              <span>Menu</span>
+            </button>
+            <div class="game-meta-group">
+              <span id="game-badge-type" class="meta-badge-size">Mini</span>
+              <span id="game-timer" class="game-timer">00:00</span>
+            </div>
+            <button id="btn-reveal-menu" class="btn-control-secondary" aria-label="Puzzle Tools">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
+          </div>
+
+          <!-- Active Focused Clue Bar -->
+          <div id="active-clue-bar" class="active-clue-panel glass-panel" role="region" aria-live="polite">
+            <button id="clue-prev-btn" class="clue-stepper" aria-label="Previous Clue">‹</button>
+            <div class="active-clue-content">
+              <span id="active-clue-label" class="clue-num">1A</span>
+              <span id="active-clue-text" class="clue-text">Tap a cell to begin solving.</span>
+            </div>
+            <button id="clue-next-btn" class="clue-stepper" aria-label="Next Clue">›</button>
+          </div>
+
+          <!-- Crossword Grid Viewport -->
+          <div class="grid-viewport" id="grid-container-wrap">
+            <div id="crossword-board" class="crossword-grid" role="grid" aria-label="Crossword Board">
+              <!-- Dynamically populated cells -->
+            </div>
+          </div>
+
+          <!-- Clues Tabs -->
+          <div class="clues-tabbed-container glass-panel-compact">
+            <div class="clues-tabs-header">
+              <button id="tab-across" class="clue-tab-btn active">Across</button>
+              <button id="tab-down" class="clue-tab-btn">Down</button>
+            </div>
+            <div id="clues-list-across" class="clues-scroll-list active"></div>
+            <div id="clues-list-down" class="clues-scroll-list hidden"></div>
+          </div>
+
+          <!-- Virtual Keyboard -->
+          <div class="virtual-keyboard" id="touch-keyboard" aria-label="Touch Keyboard">
+            <div class="keyboard-row">
+              <button class="key-btn" data-key="Q">Q</button><button class="key-btn" data-key="W">W</button><button class="key-btn" data-key="E">E</button><button class="key-btn" data-key="R">R</button><button class="key-btn" data-key="T">T</button><button class="key-btn" data-key="Y">Y</button><button class="key-btn" data-key="U">U</button><button class="key-btn" data-key="I">I</button><button class="key-btn" data-key="O">O</button><button class="key-btn" data-key="P">P</button>
+            </div>
+            <div class="keyboard-row">
+              <button class="key-btn" data-key="A">A</button><button class="key-btn" data-key="S">S</button><button class="key-btn" data-key="D">D</button><button class="key-btn" data-key="F">F</button><button class="key-btn" data-key="G">G</button><button class="key-btn" data-key="H">H</button><button class="key-btn" data-key="J">J</button><button class="key-btn" data-key="K">K</button><button class="key-btn" data-key="L">L</button>
+            </div>
+            <div class="keyboard-row">
+              <button class="key-btn special-key" id="key-dir-toggle" title="Toggle Across / Down" aria-label="Toggle Direction">⟳</button>
+              <button class="key-btn" data-key="Z">Z</button><button class="key-btn" data-key="X">X</button><button class="key-btn" data-key="C">C</button><button class="key-btn" data-key="V">V</button><button class="key-btn" data-key="B">B</button><button class="key-btn" data-key="N">N</button><button class="key-btn" data-key="M">M</button>
+              <button class="key-btn special-key backspace-key" data-key="BACKSPACE" aria-label="Backspace">⌫</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN: VAULT ARCHIVE -->
+      <section id="screen-vault" class="screen" aria-labelledby="vault-heading">
+        <div class="vault-container">
+          <div class="vault-top-bar">
+            <button id="btn-vault-back" class="btn-control-secondary">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              <span>Menu</span>
+            </button>
+            <h2 id="vault-heading" class="vault-header-title">The Vault</h2>
+            <div style="width:40px;"></div>
+          </div>
+
+          <p class="vault-description">Revisit previously released daily curling crosswords. Future dates are strictly preserved.</p>
+
+          <div class="vault-size-filters" role="tablist" aria-label="Vault size filter">
+            <button class="v-filter-btn active" data-vfilter="all">All Sizes</button>
+            <button class="v-filter-btn" data-vfilter="mini">Mini (4×4)</button>
+            <button class="v-filter-btn" data-vfilter="midi">Midi (6×6)</button>
+            <button class="v-filter-btn" data-vfilter="main">Main (10×10)</button>
+          </div>
+
+          <div id="vault-list-items" class="vault-items-flow">
+            <!-- Populated via script -->
+          </div>
+        </div>
+      </section>
+
+      <!-- MODAL: WIN / RESULTS -->
+      <div id="modal-complete" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-win-title">
+        <div class="modal-card glass-panel">
+          <div class="modal-house-rings">
+            <div class="m-ring m-blue"></div>
+            <div class="m-ring m-white"></div>
+            <div class="m-ring m-red"></div>
+            <div class="m-stone-badge">
+              <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><ellipse cx="16" cy="18" rx="13" ry="8" fill="#a4b3c2" stroke="#102f4a" stroke-width="1.8"/><path d="M6 18 C6 13 26 13 26 18" fill="#8f9ca8"/><rect x="12" y="6" width="8" height="4.5" rx="2" fill="#d63b3b"/><path d="M16 10.5 L16 14" stroke="#d63b3b" stroke-width="2.5" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+          <h2 id="modal-win-title" class="modal-title">End Complete!</h2>
+          <p class="modal-sub" id="modal-win-sub">Crossword solved cleanly on the button.</p>
+
+          <div class="results-stats-row">
+            <div class="r-stat-box">
+              <span class="r-stat-val" id="res-time">01:45</span>
+              <span class="r-stat-lbl">Time</span>
+            </div>
+            <div class="r-stat-box">
+              <span class="r-stat-val" id="res-board">Mini 4×4</span>
+              <span class="r-stat-lbl">Sheet</span>
+            </div>
+            <div class="r-stat-box">
+              <span class="r-stat-val" id="res-streak">1</span>
+              <span class="r-stat-lbl">Streak</span>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button id="btn-win-next-size" class="btn btn-primary btn-large">Next Board</button>
+            <button id="btn-win-close" class="btn btn-glass">Return to Menu</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: BOARD TOOLS -->
+      <div id="modal-tools" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-tools-title">
+        <div class="modal-card glass-panel">
+          <h2 id="modal-tools-title" class="modal-title">Board Tools</h2>
+          <div class="tools-list">
+            <button id="tool-check-letter" class="btn btn-glass tool-btn">Check Current Cell</button>
+            <button id="tool-check-word" class="btn btn-glass tool-btn">Check Current Word</button>
+            <button id="tool-clear-board" class="btn btn-glass tool-btn text-danger">Reset Board</button>
+          </div>
+          <button id="btn-close-tools" class="btn btn-primary" style="margin-top:14px;">Resume Play</button>
+        </div>
+      </div>
+
     </main>
-
-    <section id="screen-daily-sub" class="screen-view">
-      <div class="view-header neo-card">
-        <button class="neo-btn back-btn" id="btn-back-from-sub">← MENU</button>
-        <div class="view-title-group">
-          <h2 class="view-title" id="daily-sub-title">TODAY'S PUZZLES</h2>
-          <span class="view-date-badge" id="daily-sub-date">Date</span>
-        </div>
-      </div>
-
-      <div class="tier-grid">
-        <article class="tier-card neo-card" id="tier-card-full">
-          <div class="tier-header-row">
-            <span class="tier-badge size-full">15×15 CLASSIC</span>
-            <span id="status-full" class="status-pill">READY</span>
-          </div>
-          <h3 class="tier-title" id="tier-title-full">Classic Crossword (15×15)</h3>
-          <p class="tier-desc">Traditional 15×15 tournament-grade grid featuring intersecting clues and balanced themes.</p>
-          <div class="tier-footer-row">
-            <span class="tier-meta-time" id="meta-time-full">Est. 8–15 min</span>
-            <button class="neo-btn tier-play-btn primary-btn" data-type="full">PLAY CLASSIC 15×15</button>
-          </div>
-        </article>
-
-        <article class="tier-card neo-card" id="tier-card-midi">
-          <div class="tier-header-row">
-            <span class="tier-badge size-midi">9×9 MIDI</span>
-            <span id="status-midi" class="status-pill">READY</span>
-          </div>
-          <h3 class="tier-title" id="tier-title-midi">Midi Crossword (9×9)</h3>
-          <p class="tier-desc">Mid-sized 9×9 puzzle designed for a brisk mental workout during a coffee break.</p>
-          <div class="tier-footer-row">
-            <span class="tier-meta-time" id="meta-time-midi">Est. 3–6 min</span>
-            <button class="neo-btn tier-play-btn primary-btn" data-type="midi">PLAY MIDI 9×9</button>
-          </div>
-        </article>
-
-        <article class="tier-card neo-card" id="tier-card-mini">
-          <div class="tier-header-row">
-            <span class="tier-badge size-mini">5×5 MINI</span>
-            <span id="status-mini" class="status-pill">READY</span>
-          </div>
-          <h3 class="tier-title" id="tier-title-mini">Mini Crossword (5×5)</h3>
-          <p class="tier-desc">Fast and dense 5×5 sprint. Solve all five across and down entries in under two minutes.</p>
-          <div class="tier-footer-row">
-            <span class="tier-meta-time" id="meta-time-mini">Est. 1–2 min</span>
-            <button class="neo-btn tier-play-btn primary-btn" data-type="mini">PLAY MINI 5×5</button>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section id="screen-vault" class="screen-view">
-      <div class="view-header neo-card">
-        <button class="neo-btn back-btn" id="btn-back-from-vault">← MENU</button>
-        <div class="view-title-group">
-          <h2 class="view-title">PUZZLE ARCHIVE</h2>
-          <span class="view-date-badge">PAST EDITIONS</span>
-        </div>
-      </div>
-      <p class="vault-info-banner neo-card">
-        Select any archived daily edition below to replay or review past crosswords.
-      </p>
-      <div id="vault-list" class="vault-container"></div>
-    </section>
-
-    <section id="screen-puzzle" class="screen-view">
-      <div class="game-control-bar neo-card">
-        <div class="game-info">
-          <button id="btn-game-back" class="neo-btn small-btn" title="Back to Puzzles">← BACK</button>
-          <div class="game-title-group">
-            <span class="game-title-kicker">DAILY CROSSWORD</span>
-            <span id="game-puzzle-title" class="game-title">Crossword</span>
-            <span id="game-puzzle-tier" class="game-tier-tag">GRID</span>
-          </div>
-        </div>
-
-        <div class="game-stats">
-          <div class="timer-badge neo-card-inset">
-            <span class="timer-icon">⏱️</span>
-            <span id="game-timer">00:00</span>
-          </div>
-          <div class="tools-group">
-            <button id="btn-check-word" class="neo-btn tool-btn" title="Check Current Word">CHECK</button>
-            <button id="btn-reveal-word" class="neo-btn tool-btn" title="Reveal Current Word">REVEAL</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid-scroll-wrapper" id="grid-wrapper">
-        <div id="crossword-grid-container" class="grid-container"></div>
-      </div>
-
-      <div class="active-clue-bar neo-card" id="clue-bar" title="Tap to toggle Across and Down">
-        <button id="btn-prev-clue" class="clue-nav-btn neo-btn icon-only" title="Previous Clue">◀</button>
-        <div class="clue-content" id="clue-display">
-          <span id="clue-dir-label" class="clue-dir-pill">ACROSS</span>
-          <span id="clue-number-label" class="clue-number">1A</span>
-          <span id="clue-text-label" class="clue-text">Select any square to inspect clues...</span>
-        </div>
-        <button id="btn-next-clue" class="clue-nav-btn neo-btn icon-only" title="Next Clue">▶</button>
-      </div>
-
-      <div class="virtual-keyboard neo-card" id="custom-keyboard" aria-label="Virtual Keyboard">
-        <div class="keyboard-row">
-          <button class="key-btn" data-key="Q">Q</button>
-          <button class="key-btn" data-key="W">W</button>
-          <button class="key-btn" data-key="E">E</button>
-          <button class="key-btn" data-key="R">R</button>
-          <button class="key-btn" data-key="T">T</button>
-          <button class="key-btn" data-key="Y">Y</button>
-          <button class="key-btn" data-key="U">U</button>
-          <button class="key-btn" data-key="I">I</button>
-          <button class="key-btn" data-key="O">O</button>
-          <button class="key-btn" data-key="P">P</button>
-        </div>
-        <div class="keyboard-row">
-          <button class="key-btn" data-key="A">A</button>
-          <button class="key-btn" data-key="S">S</button>
-          <button class="key-btn" data-key="D">D</button>
-          <button class="key-btn" data-key="F">F</button>
-          <button class="key-btn" data-key="G">G</button>
-          <button class="key-btn" data-key="H">H</button>
-          <button class="key-btn" data-key="J">J</button>
-          <button class="key-btn" data-key="K">K</button>
-          <button class="key-btn" data-key="L">L</button>
-        </div>
-        <div class="keyboard-row">
-          <button class="key-btn action-key dir-key" data-key="TOGGLE" title="Toggle Direction">⟲ DIR</button>
-          <button class="key-btn" data-key="Z">Z</button>
-          <button class="key-btn" data-key="X">X</button>
-          <button class="key-btn" data-key="C">C</button>
-          <button class="key-btn" data-key="V">V</button>
-          <button class="key-btn" data-key="B">B</button>
-          <button class="key-btn" data-key="N">N</button>
-          <button class="key-btn" data-key="M">M</button>
-          <button class="key-btn action-key backspace-key" data-key="BACKSPACE" title="Delete">⌫</button>
-        </div>
-      </div>
-    </section>
-
-    <div id="modal-settings" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-      <div class="modal-card neo-card">
-        <div class="modal-header">
-          <h3 class="modal-title" id="settings-title">SETTINGS</h3>
-          <button class="neo-btn small-btn close-modal-btn" aria-label="Close settings">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="setting-row">
-            <div>
-              <label for="setting-sound" class="setting-label-bold">Sound Effects</label>
-              <div class="setting-note">Audio cues for keystrokes and completions</div>
-            </div>
-            <input type="checkbox" id="setting-sound" checked class="neo-toggle">
-          </div>
-
-          <hr class="neo-divider">
-
-          <div class="setting-block">
-            <h4 class="setting-heading">Saved Data</h4>
-            <p class="setting-note">
-              Clear your local completion history, best times, and streaks on this device.
-            </p>
-            <button id="btn-reset-storage" class="neo-btn danger-btn full-width">RESET PROGRESS</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="modal-rules" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rules-title">
-      <div class="modal-card neo-card">
-        <div class="modal-header">
-          <h3 class="modal-title" id="rules-title">HOW TO PLAY</h3>
-          <button class="neo-btn small-btn close-modal-btn" aria-label="Close rules">✕</button>
-        </div>
-        <div class="modal-body modal-scrollable">
-          <h4 class="rule-section-head">Crossword Rules</h4>
-          <p>• Fill in the white squares with letters to form words corresponding to the Across and Down clues.</p>
-          <p>• Black squares separate distinct words.</p>
-          <p>• Every letter where an Across word intersects a Down word must be valid for both clues.</p>
-
-          <h4 class="rule-section-head">Navigation & Controls</h4>
-          <p>• <strong>Select a Square:</strong> Tap any white square to select it.</p>
-          <p>• <strong>Toggle Direction:</strong> Tap the selected square again, tap the <strong>DIR</strong> key, or tap the Clue Bar to switch between Across and Down.</p>
-          <p>• <strong>Typing:</strong> Use the on-screen keyboard or physical keyboard keys to enter letters. Typing advances automatically to the next square in the active word.</p>
-          <p>• <strong>Deleting:</strong> Press <strong>⌫</strong> (Backspace) to clear the active letter or step backward.</p>
-          <p>• <strong>Clue Navigation:</strong> Tap <strong>◀</strong> or <strong>▶</strong> on the clue bar, or use <strong>Tab</strong> / <strong>Shift+Tab</strong> on physical keyboards to cycle through clues.</p>
-
-          <h4 class="rule-section-head">Assistance Tools</h4>
-          <p>• <strong>CHECK:</strong> Highlights any incorrect letters in the active word with a brief red shake.</p>
-          <p>• <strong>REVEAL:</strong> Solves and fills the correct letters for the active word if you are stuck.</p>
-        </div>
-      </div>
-    </div>
-
-    <div id="modal-victory" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="victory-heading">
-      <div class="modal-card neo-card victory-card">
-        <canvas id="victory-canvas" class="confetti-canvas"></canvas>
-        <div class="victory-stamp">CONGRATULATIONS!</div>
-        <h2 class="victory-title" id="victory-heading">PUZZLE COMPLETE</h2>
-        <p class="victory-sub" id="victory-tier-label">All clues correctly solved</p>
-
-        <div class="victory-stats neo-card-inset">
-          <div class="stat-box">
-            <span class="stat-num" id="victory-time">00:00</span>
-            <span class="stat-label">TIME</span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-num" id="victory-score">100%</span>
-            <span class="stat-label">ACCURACY</span>
-          </div>
-        </div>
-
-        <button id="btn-victory-continue" class="neo-btn primary-btn full-width">CONTINUE</button>
-      </div>
-    </div>
-
   </div>
 
+  <script src="puzzles.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
