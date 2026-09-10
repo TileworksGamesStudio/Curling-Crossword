@@ -178,6 +178,177 @@ window.CURLING_CROSSWORDS_DATA = {
       }
     }
   ],
+  window,CURLING_CROSSWORDS_DATA : {
+  /* ==========================================================================
+     MINI CROSSWORDS (4×4)
+     ========================================================================== */
+  mini: [
+    // Day 5: Mini
+    {
+      id: "mini_day5",
+      title: "Mini",
+      size: 4,
+      grid: [
+        ["S", "T", "E", "P"],
+        ["C", "O", "V", "E"],
+        ["O", "M", "E", "N"],
+        ["T", "E", "N", "T"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4],
+        [5, 0, 0, 0],
+        [6, 0, 0, 0],
+        [7, 0, 0, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "Slide out of the hack[cite: 1, 2]" },
+          { num: 5, clue: "Small sheltered bay" },
+          { num: 6, clue: "Sign of the future" },
+          { num: 7, clue: "Bonspiel beer garden covering[cite: 2]" }
+        ],
+        down: [
+          { num: 1, clue: "Historically, the first type of curler[cite: 2]" },
+          { num: 2, clue: "Thick, heavy book" },
+          { num: 3, clue: "Like the score in a tied match[cite: 1, 2]" },
+          { num: 4, clue: "___ up (frustrated)" }
+        ]
+      }
+    },
+
+    // Day 6: Mini
+    {
+      id: "mini_day6",
+      title: "Mini",
+      size: 4,
+      grid: [
+        ["G", "L", "A", "D"],
+        ["L", "I", "N", "E"],
+        ["I", "R", "O", "N"],
+        ["B", "E", "N", "T"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4],
+        [5, 0, 0, 0],
+        [6, 0, 0, 0],
+        [7, 0, 0, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "Happy about a bonspiel win[cite: 2]" },
+          { num: 5, clue: "The skip's intended trajectory[cite: 1, 2]" },
+          { num: 6, clue: "Early Canadian curling stone material[cite: 2]" },
+          { num: 7, clue: "Like the sliding knee during delivery[cite: 1, 2]" }
+        ],
+        down: [
+          { num: 1, clue: "Smooth-talking" },
+          { num: 2, clue: "Pre-euro Italian currency" },
+          { num: 3, clue: "Shortly, to a poet" },
+          { num: 4, clue: "Blemish on a car fender" }
+        ]
+      }
+    },
+
+    // Day 7: Mini
+    {
+      id: "mini_day7",
+      title: "Mini",
+      size: 4,
+      grid: [
+        ["C", "L", "A", "P"],
+        ["H", "O", "L", "E"],
+        ["I", "D", "E", "A"],
+        ["P", "E", "E", "L"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4],
+        [5, 0, 0, 0],
+        [6, 0, 0, 0],
+        [7, 0, 0, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "Cheer a great shot from the stands" },
+          { num: 5, clue: "Golf's equivalent of an end[cite: 1, 2]" },
+          { num: 6, clue: "The skip's strategic plan[cite: 2]" },
+          { num: 7, clue: "Heavy takeout shot[cite: 2]" }
+        ],
+        down: [
+          { num: 1, clue: "Slightly deflect off a guard stone[cite: 1, 2]" },
+          { num: 2, clue: "Mother ___ (vein of ore)" },
+          { num: 3, clue: "Away from the wind, nautically" },
+          { num: 4, clue: "Ringing of bells" }
+        ]
+      }
+    },
+
+    // Day 8: Mini
+    {
+      id: "mini_day8",
+      title: "Mini",
+      size: 4,
+      grid: [
+        ["S", "W", "A", "P"],
+        ["H", "I", "D", "E"],
+        ["O", "R", "E", "S"],
+        ["W", "E", "N", "T"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4],
+        [5, 0, 0, 0],
+        [6, 0, 0, 0],
+        [7, 0, 0, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "Change throwing order positions[cite: 2]" },
+          { num: 5, clue: "Curl perfectly behind a guard[cite: 2]" },
+          { num: 6, clue: "Mined materials" },
+          { num: 7, clue: "Left the arena" }
+        ],
+        down: [
+          { num: 1, clue: "Bonspiel spectacle[cite: 2]" },
+          { num: 2, clue: "\"Missed it by a ___!\" (narrow miss)[cite: 2]" },
+          { num: 3, clue: "Major port city in Yemen" },
+          { num: 4, clue: "Annoying fan at the glass" }
+        ]
+      }
+    },
+
+    // Day 9: Mini
+    {
+      id: "mini_day9",
+      title: "Mini",
+      size: 4,
+      grid: [
+        ["R", "O", "P", "E"],
+        ["I", "D", "O", "L"],
+        ["N", "I", "N", "E"],
+        ["K", "N", "E", "E"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4],
+        [5, 0, 0, 0],
+        [6, 0, 0, 0],
+        [7, 0, 0, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "Thick twine" },
+          { num: 5, clue: "Curling hero, like Sandra Schmirler[cite: 2]" },
+          { num: 6, clue: "One short of ten ends[cite: 1, 2]" },
+          { num: 7, clue: "Joint bent deeply during delivery[cite: 1, 2]" }
+        ],
+        down: [
+          { num: 1, clue: "The curling team or the playing sheet[cite: 1, 2]" },
+          { num: 2, clue: "Norse god" },
+          { num: 3, clue: "Cornbread type" },
+          { num: 4, clue: "Civil War general Robert E. ___" }
+        ]
+      }
+    }
+  ]
+},
 
   /* ==========================================================================
      MIDI CROSSWORDS (6×6)
@@ -384,6 +555,211 @@ window.CURLING_CROSSWORDS_DATA = {
           { num: 4, clue: "Clean takeout shot displacing target rock" },
           { num: 5, clue: "Finesse shot that curls softly around a front guard" },
           { num: 6, clue: "Skip calls strategy from this house location" }
+        ]
+      }
+    }
+  ],
+  /* ==========================================================================
+     MIDI CROSSWORDS (6×6) — CONTINUATION (DAYS 5-7)
+     ========================================================================== */
+  midi: [
+    // Day 5: Midi
+    {
+      id: "midi_day5",
+      title: "Midi",
+      size: 6,
+      grid: [
+        ["S", "P", "A", "R", "E", "#"],
+        ["P", "A", "N", "E", "L", "#"],
+        ["A", "N", "G", "L", "E", "#"],
+        ["R", "E", "L", "I", "C", "#"],
+        ["E", "L", "E", "C", "T", "#"],
+        ["#", "#", "#", "#", "#", "#"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4, 5, 0],
+        [6, 0, 0, 0, 0, 0],
+        [7, 0, 0, 0, 0, 0],
+        [8, 0, 0, 0, 0, 0],
+        [9, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "Fifth player ready on the team bench" },
+          { num: 6, clue: "Scoreboard section displaying the end points" },
+          { num: 7, clue: "The geometric trajectory of a raise takeout" },
+          { num: 8, clue: "An old corn broom in the modern era, e.g." },
+          { num: 9, clue: "Choose a strategic shot option" }
+        ],
+        down: [
+          { num: 1, clue: "Alternate curler called in for injury relief" },
+          { num: 2, clue: "The club's scoring display board" },
+          { num: 3, clue: "Trajectory geometry off a precise hit" },
+          { num: 4, clue: "Historic curling artifact kept in a club case" },
+          { num: 5, clue: "Decides on the out-turn instead of the in-turn" }
+        ]
+      }
+    },
+
+    // Day 6: Midi
+    {
+      id: "midi_day6",
+      title: "Midi",
+      size: 6,
+      grid: [
+        ["H", "E", "A", "R", "T", "#"],
+        ["E", "M", "B", "E", "R", "#"],
+        ["A", "B", "U", "S", "E", "#"],
+        ["R", "E", "S", "I", "N", "#"],
+        ["T", "R", "E", "N", "D", "#"],
+        ["#", "#", "#", "#", "#", "#"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4, 5, 0],
+        [6, 0, 0, 0, 0, 0],
+        [7, 0, 0, 0, 0, 0],
+        [8, 0, 0, 0, 0, 0],
+        [9, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "The Scotties Tournament of ___" },
+          { num: 6, clue: "Glowing coal at a post-bonspiel fire pit" },
+          { num: 7, clue: "Treat the curling ice poorly (informal)" },
+          { num: 8, clue: "Sticky substance sometimes used for athletic grip" },
+          { num: 9, clue: "Scoring momentum shift during a match" }
+        ],
+        down: [
+          { num: 1, clue: "Iconic symbol of the Canadian women's curling championship" },
+          { num: 2, clue: "Fading flame at the outdoor club bonfire" },
+          { num: 3, clue: "Slam a broom into the ice in frustration, e.g." },
+          { num: 4, clue: "Grip-enhancing powder" },
+          { num: 5, clue: "Statistical pattern of wins for a top team" }
+        ]
+      }
+    },
+
+    // Day 7: Midi
+    {
+      id: "midi_day7",
+      title: "Midi",
+      size: 6,
+      grid: [
+        ["T", "E", "E", "S", "#", "#"],
+        ["E", "A", "C", "H", "#", "#"],
+        ["E", "C", "H", "O", "#", "#"],
+        ["S", "H", "O", "E", "#", "#"],
+        ["#", "#", "#", "#", "O", "N"],
+        ["#", "#", "#", "#", "N", "O"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4, 0, 0],
+        [5, 0, 0, 0, 0, 0],
+        [6, 0, 0, 0, 0, 0],
+        [7, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 8, 9],
+        [0, 0, 0, 0, 10, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "Center targets where the tee lines intersect" },
+          { num: 5, clue: "Two stones are thrown by ___ player" },
+          { num: 6, clue: "Reverberating sound of granite striking granite" },
+          { num: 7, clue: "Slider or gripper footwear" },
+          { num: 8, clue: "Positioned directly ___ the button" },
+          { num: 10, clue: "___ free guard zone violations permitted" }
+        ],
+        down: [
+          { num: 1, clue: "The horizontal lines dividing the houses" },
+          { num: 2, clue: "Every single end played in a bonspiel" },
+          { num: 3, clue: "Skip's loud sweeping call bouncing off arena walls" },
+          { num: 4, clue: "Crucial piece of Teflon-soled curling gear" },
+          { num: 8, clue: "Resting ___ the rings" },
+          { num: 9, clue: "Opposite of 'yep' from the skip" }
+        ]
+      }
+    }
+  ],
+  /* ==========================================================================
+     MIDI CROSSWORDS (6×6) — CONTINUATION (DAYS 8-9)
+     ========================================================================== */
+  midi: [
+    // Day 8: Midi
+    {
+      id: "midi_day8",
+      title: "Midi",
+      size: 6,
+      grid: [
+        ["C", "H", "A", "M", "P", "#"],
+        ["H", "O", "N", "O", "R", "#"],
+        ["A", "N", "G", "L", "E", "#"],
+        ["M", "O", "L", "E", "S", "#"],
+        ["P", "R", "E", "S", "S", "#"],
+        ["#", "#", "#", "#", "#", "#"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4, 5, 0],
+        [6, 0, 0, 0, 0, 0],
+        [7, 0, 0, 0, 0, 0],
+        [8, 0, 0, 0, 0, 0],
+        [9, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "Bonspiel winner" },
+          { num: 6, clue: "Curling tradition of sportsmanship and ___" },
+          { num: 7, clue: "Trajectory geometry for a raise takeout" },
+          { num: 8, clue: "Burrowing critters under the outdoor pond ice" },
+          { num: 9, clue: "Apply heavy weight on the broom head" }
+        ],
+        down: [
+          { num: 1, clue: "Tournament victor" },
+          { num: 2, clue: "Respect the opponent's great shot" },
+          { num: 3, clue: "Deflection path off a front guard" },
+          { num: 4, clue: "Small animals that might ruin an outdoor rink" },
+          { num: 5, clue: "Lean hard into the sweeping pad" }
+        ]
+      }
+    },
+
+    // Day 9: Midi
+    {
+      id: "midi_day9",
+      title: "Midi",
+      size: 6,
+      grid: [
+        ["P", "O", "W", "E", "R", "#"],
+        ["O", "L", "I", "V", "E", "#"],
+        ["W", "I", "D", "E", "N", "#"],
+        ["E", "V", "E", "N", "T", "#"],
+        ["R", "E", "N", "T", "S", "#"],
+        ["#", "#", "#", "#", "#", "#"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4, 5, 0],
+        [6, 0, 0, 0, 0, 0],
+        [7, 0, 0, 0, 0, 0],
+        [8, 0, 0, 0, 0, 0],
+        [9, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "Heavy takeout weight" },
+          { num: 6, clue: "Martini garnish at the post-game lounge" },
+          { num: 7, clue: "Sweep early to keep the stone's path from curling too much" },
+          { num: 8, clue: "A bonspiel tournament" },
+          { num: 9, clue: "Hires out a sheet of ice for practice" }
+        ],
+        down: [
+          { num: 1, clue: "Force behind a fast strike" },
+          { num: 2, clue: "Green snack in the curling club bar" },
+          { num: 3, clue: "Push the stone's trajectory further outside" },
+          { num: 4, clue: "The Brier or Scotties, e.g." },
+          { num: 5, clue: "Pays for seasonal club locker space" }
         ]
       }
     }
@@ -724,6 +1100,367 @@ window.CURLING_CROSSWORDS_DATA = {
           { num: 22, clue: "Third team thrower" },
           { num: 25, clue: "Ailsa Craig granite island" },
           { num: 26, clue: "End score difference" }
+        ]
+      }
+    }
+  ],
+  /* ==========================================================================
+     MAIN CROSSWORDS (10×10)
+     Curling Championship Formats & Authentic Geometry
+     ========================================================================== */
+  main: [
+    // Day 0: Main (10x10) - Theme: Ice & Strategy
+    {
+      id: "main_day5",
+      title: "Main",
+      size: 10,
+      grid: [
+        ["S", "K", "I", "P", "#", "S", "H", "O", "E", "S"],
+        ["P", "O", "R", "E", "#", "W", "A", "V", "E", "S"],
+        ["I", "R", "O", "N", "#", "E", "V", "E", "N", "T"],
+        ["N", "E", "S", "T", "S", "#", "E", "N", "D", "S"],
+        ["#", "#", "#", "S", "P", "I", "N", "S", "#", "#"],
+        ["#", "#", "G", "U", "A", "R", "D", "#", "#", "#"],
+        ["H", "A", "R", "D", "#", "O", "M", "E", "G", "A"],
+        ["O", "V", "E", "N", "#", "N", "E", "X", "U", "S"],
+        ["G", "E", "A", "R", "#", "S", "T", "E", "L", "E"],
+        ["S", "T", "E", "P", "#", "S", "S", "T", "S", "S"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4, 0, 5, 6, 7, 8, 9],
+        [10, 0, 0, 0, 0, 11, 0, 0, 0, 0],
+        [12, 0, 0, 0, 0, 13, 0, 0, 0, 0],
+        [14, 0, 0, 0, 15, 0, 16, 0, 0, 0],
+        [0, 0, 0, 17, 0, 0, 0, 0, 0, 0],
+        [0, 0, 18, 0, 0, 0, 0, 0, 0, 0],
+        [19, 20, 0, 0, 0, 21, 0, 0, 22, 23],
+        [24, 0, 0, 0, 0, 25, 0, 0, 0, 0],
+        [26, 0, 0, 0, 0, 27, 0, 0, 0, 0],
+        [28, 0, 0, 0, 0, 29, 0, 0, 0, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "Captain who sets the team's strategy and holds the broom[cite: 1, 2]" },
+          { num: 5, clue: "Specialized slippery sliding footwear[cite: 1]" },
+          { num: 10, clue: "Study intently, as the skip does the ice" },
+          { num: 11, clue: "Friendly acknowledgments from the crowd" },
+          { num: 12, clue: "Early heavy material used for Canadian stones[cite: 2]" },
+          { num: 13, clue: "The Brier or the Scotties, for example[cite: 2]" },
+          { num: 14, clue: "Birds' homes near the summer curling camp" },
+          { num: 16, clue: "Curling's equivalent of innings; 8 or 10 per game[cite: 1, 2]" },
+          { num: 17, clue: "Rotations applied to the stone handle[cite: 1, 2]" },
+          { num: 18, clue: "Defensive stone placed in front of the house[cite: 1, 2]" },
+          { num: 19, clue: "Vigorous sweeping call yelled by skip[cite: 1]" },
+          { num: 21, clue: "The final letter, or the end of a match" },
+          { num: 24, clue: "Warming appliance in the club kitchen" },
+          { num: 25, clue: "Connection point between teammates" },
+          { num: 26, clue: "Curling equipment hauled in a bag[cite: 1]" },
+          { num: 27, clue: "Stone pillar monument" },
+          { num: 28, clue: "Foot movement during the slide delivery" },
+          { num: 29, clue: "Fast concords (abbr.)" }
+        ],
+        down: [
+          { num: 1, clue: "Rotations on the stone[cite: 1]" },
+          { num: 2, clue: "Body part protected by a sliding pad" },
+          { num: 3, clue: "Wrath after a burnt stone" },
+          { num: 4, clue: "Tents for outdoor bonspiels" },
+          { num: 5, clue: "Sweeps with vigorous brush strokes[cite: 1]" },
+          { num: 6, clue: "Resting place for counting stones[cite: 1]" },
+          { num: 7, clue: "Warming cooking appliances" },
+          { num: 8, clue: "Even scores" },
+          { num: 9, clue: "Statistics (abbr.)" },
+          { num: 15, clue: "Studs on the gripper foot[cite: 1]" },
+          { num: 16, clue: "Iron elements" },
+          { num: 18, clue: "Given line instructions" },
+          { num: 19, clue: "Stones resting completely over the far line[cite: 1, 2]" },
+          { num: 20, clue: "Acknowledge a great takeout" },
+          { num: 21, clue: "Begins the delivery" },
+          { num: 22, clue: "Pebble droplets frozen on the sheet[cite: 1]" },
+          { num: 23, clue: "Bearded animals" }
+        ]
+      }
+    },
+    {
+      id: "main_day6",
+      title: "Main",
+      size: 10,
+      grid: [
+        ["D", "R", "A", "W", "#", "H", "O", "U", "S", "E"],
+        ["R", "O", "P", "E", "#", "O", "U", "N", "C", "E"],
+        ["O", "V", "E", "N", "#", "U", "N", "C", "L", "E"],
+        ["P", "E", "X", "T", "S", "#", "C", "L", "I", "P"],
+        ["#", "#", "#", "S", "H", "O", "E", "S", "#", "#"],
+        ["#", "#", "P", "E", "E", "L", "S", "#", "#", "#"],
+        ["C", "L", "E", "A", "R", "#", "S", "P", "I", "N"],
+        ["L", "E", "A", "V", "E", "#", "P", "O", "L", "E"],
+        ["O", "V", "E", "N", "S", "#", "O", "L", "I", "V"],
+        ["G", "E", "R", "S", "#", "A", "T", "O", "M", "S"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4, 0, 5, 6, 7, 8, 9],
+        [10, 0, 0, 0, 0, 11, 0, 0, 0, 0],
+        [12, 0, 0, 0, 0, 13, 0, 0, 0, 0],
+        [14, 0, 0, 0, 15, 0, 16, 0, 0, 0],
+        [0, 0, 0, 17, 0, 18, 0, 0, 0, 0],
+        [0, 0, 19, 0, 0, 0, 0, 0, 0, 0],
+        [20, 21, 0, 0, 0, 0, 22, 23, 24, 25],
+        [26, 0, 0, 0, 0, 0, 27, 0, 0, 0],
+        [28, 0, 0, 0, 0, 0, 29, 0, 0, 0],
+        [30, 0, 0, 0, 0, 31, 0, 0, 0, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "Finesse shot meant to stop inside the rings without hitting[cite: 1, 2]" },
+          { num: 5, clue: "Concentric circle scoring area target[cite: 1, 2]" },
+          { num: 10, clue: "Barrier material separating club sheets" },
+          { num: 11, clue: "Small amount of weight adjustment" },
+          { num: 12, clue: "Post-game pizza cooker" },
+          { num: 13, clue: "Relative cheering in the bonspiel stands" },
+          { num: 14, clue: "Chest muscles of a powerful sweeper" },
+          { num: 16, clue: "Graze a guard lightly[cite: 1]" },
+          { num: 17, clue: "Teflon-soled equipment[cite: 1, 2]" },
+          { num: 19, clue: "Heavy weight takeout deliveries[cite: 2]" },
+          { num: 20, clue: "Remove an opponent's stone from play[cite: 1, 2]" },
+          { num: 22, clue: "Rotation given to stone upon release[cite: 1, 2]" },
+          { num: 26, clue: "Exit the hack" },
+          { num: 27, clue: "Stick delivery aid" },
+          { num: 28, clue: "Baking appliances" },
+          { num: 29, clue: "Martini garnish" },
+          { num: 30, clue: "Tents for nomadic curlers" },
+          { num: 31, clue: "Tiny particles" }
+        ],
+        down: [
+          { num: 1, clue: "Release of stone weight just before the hog line[cite: 1]" },
+          { num: 2, clue: "Wander the ice" },
+          { num: 3, clue: "Apex point of the curl" },
+          { num: 4, clue: "Canvas shelters at outdoor rinks" },
+          { num: 5, clue: "A small fraction of an ounce" },
+          { num: 6, clue: "A measurement of weight" },
+          { num: 7, clue: "Family members cheering" },
+          { num: 8, clue: "Slips on the ice" },
+          { num: 9, clue: "Energy (abbr.)" },
+          { num: 15, clue: "The smooth slide from the hack[cite: 1]" },
+          { num: 18, clue: "Stones positioned out front to shield the scoring area[cite: 1, 2]" },
+          { num: 19, clue: "The pebble surface of the rink[cite: 1]" },
+          { num: 20, clue: "Clog on the ice" },
+          { num: 21, clue: "Level of the game" },
+          { num: 23, clue: "Billiard stick" },
+          { num: 24, clue: "In a little bit" },
+          { num: 25, clue: "Nevada city" }
+        ]
+      }
+    },
+
+    {
+      id: "main_day7",
+      title: "Main",
+      size: 10,
+      grid: [
+        ["C", "U", "R", "L", "#", "S", "H", "E", "E", "T"],
+        ["O", "P", "E", "N", "#", "T", "H", "R", "E", "E"],
+        ["R", "O", "U", "T", "#", "A", "O", "R", "T", "A"],
+        ["K", "N", "S", "T", "S", "#", "E", "S", "S", "S"],
+        ["#", "#", "#", "L", "I", "N", "E", "S", "#", "#"],
+        ["#", "#", "H", "O", "G", "S", "#", "#", "#", "#"],
+        ["S", "C", "O", "R", "E", "#", "H", "A", "C", "K"],
+        ["P", "O", "L", "E", "S", "#", "A", "R", "E", "A"],
+        ["I", "R", "O", "N", "S", "#", "R", "I", "N", "G"],
+        ["T", "E", "S", "T", "S", "#", "D", "A", "T", "A"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4, 0, 5, 6, 7, 8, 9],
+        [10, 0, 0, 0, 0, 11, 0, 0, 0, 0],
+        [12, 0, 0, 0, 0, 13, 0, 0, 0, 0],
+        [14, 0, 0, 0, 15, 0, 16, 0, 0, 0],
+        [0, 0, 0, 17, 0, 18, 0, 0, 0, 0],
+        [0, 0, 19, 0, 0, 0, 0, 0, 0, 0],
+        [20, 21, 0, 0, 0, 0, 22, 23, 24, 25],
+        [26, 0, 0, 0, 0, 0, 27, 0, 0, 0],
+        [28, 0, 0, 0, 0, 0, 29, 0, 0, 0],
+        [30, 0, 0, 0, 0, 0, 31, 0, 0, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "Bends across the pebbled ice[cite: 1, 2]" },
+          { num: 5, clue: "The frozen playing surface[cite: 1, 2]" },
+          { num: 10, clue: "Unprotected house without guards" },
+          { num: 11, clue: "Number of sweepers usually required" },
+          { num: 12, clue: "Decisive win in a bonspiel" },
+          { num: 13, clue: "Heart vessel" },
+          { num: 14, clue: "Knot measurements (abbr.)" },
+          { num: 16, clue: "S-shaped curves on the sheet" },
+          { num: 17, clue: "Markings dividing the playing area[cite: 2]" },
+          { num: 19, clue: "Stones resting completely over the far boundary[cite: 1]" },
+          { num: 20, clue: "Tally points on the board[cite: 1]" },
+          { num: 22, clue: "Foot foothold block used to push out[cite: 1]" },
+          { num: 26, clue: "Stick delivery aids" },
+          { num: 27, clue: "The free guard zone, for example[cite: 1]" },
+          { num: 28, clue: "Traditional dense stones used before granite[cite: 2]" },
+          { num: 29, clue: "Concentric circle scoring area[cite: 1]" },
+          { num: 30, clue: "Evaluates ice speed" },
+          { num: 31, clue: "Analytics used for shot strategy[cite: 2]" }
+        ],
+        down: [
+          { num: 1, clue: "Inner material once used in broom handles" },
+          { num: 2, clue: "Pertaining to the body" },
+          { num: 3, clue: "Sprints to sweep" },
+          { num: 4, clue: "Large amounts" },
+          { num: 5, clue: "Position throwing rocks three and four" },
+          { num: 6, clue: "The footwear of the sport[cite: 1]" },
+          { num: 7, clue: "Mistakes in strategy" },
+          { num: 8, clue: "Extra points (abbr.)" },
+          { num: 9, clue: "Scottish caps" },
+          { num: 15, clue: "Stones used to practice weight" },
+          { num: 18, clue: "Affirmative call to sweep" },
+          { num: 19, clue: "Resting place for counting stones[cite: 1]" },
+          { num: 20, clue: "Spits out water for the pebble" },
+          { num: 21, clue: "Center core of the rock" },
+          { num: 22, clue: "Difficult shot to execute" },
+          { num: 23, clue: "The sweeping trajectory path[cite: 1]" },
+          { num: 24, clue: "The length of the ice" },
+          { num: 25, clue: "Metric prefix" }
+        ]
+      }
+    },
+    {
+      id: "main_day8",
+      title: "Main",
+      size: 10,
+      grid: [
+        ["H", "A", "C", "K", "#", "M", "A", "T", "C", "H"],
+        ["O", "V", "E", "N", "#", "O", "C", "E", "A", "N"],
+        ["M", "E", "N", "U", "#", "P", "A", "N", "E", "L"],
+        ["E", "R", "T", "S", "S", "#", "R", "T", "S", "S"],
+        ["#", "#", "#", "S", "P", "I", "N", "S", "#", "#"],
+        ["#", "#", "R", "O", "C", "K", "S", "#", "#", "#"],
+        ["T", "E", "A", "M", "S", "#", "C", "U", "R", "L"],
+        ["I", "X", "I", "A", "#", "T", "H", "R", "E", "E"],
+        ["E", "A", "S", "E", "#", "O", "U", "N", "C", "E"],
+        ["S", "M", "E", "W", "#", "P", "E", "S", "T", "S"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4, 0, 5, 6, 7, 8, 9],
+        [10, 0, 0, 0, 0, 11, 0, 0, 0, 0],
+        [12, 0, 0, 0, 0, 13, 0, 0, 0, 0],
+        [14, 0, 0, 0, 15, 0, 16, 0, 0, 0],
+        [0, 0, 0, 17, 0, 18, 0, 0, 0, 0],
+        [0, 0, 19, 0, 0, 0, 0, 0, 0, 0],
+        [20, 21, 0, 0, 0, 0, 22, 23, 24, 25],
+        [26, 0, 0, 0, 0, 27, 0, 0, 0, 0],
+        [28, 0, 0, 0, 0, 29, 0, 0, 0, 0],
+        [30, 0, 0, 0, 0, 31, 0, 0, 0, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "Rubber foot support in the ice[cite: 1, 2]" },
+          { num: 5, clue: "A full game of curling[cite: 1]" },
+          { num: 10, clue: "Kitchen cooker" },
+          { num: 11, clue: "Large body of water" },
+          { num: 12, clue: "Club restaurant list" },
+          { num: 13, clue: "Bonspiel judging committee" },
+          { num: 14, clue: "Art gallery items (var.)" },
+          { num: 16, clue: "Train lines (abbr.)" },
+          { num: 17, clue: "Revolutions on the handle[cite: 1]" },
+          { num: 19, clue: "Granite curling projectiles[cite: 1, 2]" },
+          { num: 20, clue: "Foursomes on the ice[cite: 1]" },
+          { num: 22, clue: "Curving trajectory across pebbled sheet[cite: 1, 2]" },
+          { num: 26, clue: "African iris flower" },
+          { num: 27, clue: "Third thrower in the team order[cite: 1]" },
+          { num: 28, clue: "Soft draw weight" },
+          { num: 29, clue: "Weight measurement" },
+          { num: 30, clue: "Small sea duck" },
+          { num: 31, clue: "Bugs at the summer camp" }
+        ],
+        down: [
+          { num: 1, clue: "Scoring position advantage" },
+          { num: 2, clue: "Avenger" },
+          { num: 3, clue: "A fraction of a dollar" },
+          { num: 4, clue: "Small seals" },
+          { num: 5, clue: "Floor cleaning tool, slang for older brooms[cite: 1]" },
+          { num: 6, clue: "Theatrical acts" },
+          { num: 7, clue: "Camping homes" },
+          { num: 8, clue: "Cell types" },
+          { num: 9, clue: "Less than whole" },
+          { num: 15, clue: "Finesse shots curving around guards" },
+          { num: 18, clue: "Defensive stones blocking the rings[cite: 1, 2]" },
+          { num: 19, clue: "Lift the rock slightly" },
+          { num: 20, clue: "Equal scores" },
+          { num: 21, clue: "University tests" },
+          { num: 22, clue: "Hard takeout strike" },
+          { num: 23, clue: "Not paired" },
+          { num: 24, clue: "Right coordinates (abbr.)" },
+          { num: 25, clue: "Less than zero" }
+        ]
+      }
+    },
+    {
+      id: "main_day9",
+      title: "Main",
+      size: 10,
+      grid: [
+        ["I", "C", "E", "S", "#", "S", "H", "O", "T", "S"],
+        ["C", "A", "V", "E", "#", "P", "O", "L", "E", "S"],
+        ["E", "V", "E", "N", "#", "I", "R", "O", "N", "S"],
+        ["R", "E", "N", "D", "S", "#", "E", "N", "T", "S"],
+        ["#", "#", "#", "S", "W", "E", "E", "P", "#", "#"],
+        ["#", "#", "B", "O", "A", "R", "D", "#", "#", "#"],
+        ["B", "L", "O", "C", "K", "#", "G", "A", "M", "E"],
+        ["L", "E", "A", "V", "E", "#", "E", "R", "A", "S"],
+        ["O", "V", "E", "N", "S", "#", "A", "E", "R", "O"],
+        ["W", "E", "N", "T", "S", "#", "R", "A", "Y", "S"]
+      ],
+      cellNumbers: [
+        [1, 2, 3, 4, 0, 5, 6, 7, 8, 9],
+        [10, 0, 0, 0, 0, 11, 0, 0, 0, 0],
+        [12, 0, 0, 0, 0, 13, 0, 0, 0, 0],
+        [14, 0, 0, 0, 15, 0, 16, 0, 0, 0],
+        [0, 0, 0, 17, 0, 18, 0, 0, 0, 0],
+        [0, 0, 19, 0, 0, 0, 0, 0, 0, 0],
+        [20, 21, 0, 0, 0, 0, 22, 23, 24, 25],
+        [26, 0, 0, 0, 0, 0, 27, 0, 0, 0],
+        [28, 0, 0, 0, 0, 0, 29, 0, 0, 0],
+        [30, 0, 0, 0, 0, 0, 31, 0, 0, 0]
+      ],
+      clues: {
+        across: [
+          { num: 1, clue: "Prepares the playing sheet with pebbles[cite: 1]" },
+          { num: 5, clue: "Delivered stones[cite: 1, 2]" },
+          { num: 10, clue: "Deep hollow in the ice surface" },
+          { num: 11, clue: "Measuring sticks" },
+          { num: 12, clue: "Tied scores" },
+          { num: 13, clue: "Dense materials used before granite[cite: 2]" },
+          { num: 14, clue: "Tears the fabric of the gripper" },
+          { num: 16, clue: "Tree creatures" },
+          { num: 17, clue: "Brush the ice to maintain speed[cite: 1]" },
+          { num: 19, clue: "Score tally display in the club[cite: 1]" },
+          { num: 20, clue: "Foot foothold in the hack[cite: 1]" },
+          { num: 22, clue: "The Roaring ___ (nickname for curling)[cite: 2]" },
+          { num: 26, clue: "Exit the ice" },
+          { num: 27, clue: "Historical curling periods" },
+          { num: 28, clue: "Club kitchen warmers" },
+          { num: 29, clue: "Flight prefix" },
+          { num: 30, clue: "Slid out of the hack" },
+          { num: 31, clue: "Beams of light reflecting on the ice" }
+        ],
+        down: [
+          { num: 1, clue: "Team members preparing the pebble[cite: 1]" },
+          { num: 2, clue: "Hollow spaces" },
+          { num: 3, clue: "Smoothly travels down the ice" },
+          { num: 4, clue: "Tallying the points" },
+          { num: 5, clue: "Vast numbers" },
+          { num: 6, clue: "Listened to" },
+          { num: 7, clue: "Olive type" },
+          { num: 8, clue: "Nomadic shelters at outdoor spiels" },
+          { num: 9, clue: "Third throwers" },
+          { num: 15, clue: "Mops used in early rinks[cite: 1]" },
+          { num: 18, clue: "Perimeter marker line" },
+          { num: 19, clue: "Heavy weight takeout speed" },
+          { num: 20, clue: "Strong gust of wind on outdoor ice" },
+          { num: 21, clue: "Teflon shoe base for sliding[cite: 1]" },
+          { num: 22, clue: "Equipment hauled to the rink[cite: 1]" },
+          { num: 23, clue: "Scope out the line" },
+          { num: 24, clue: "Small amounts" },
+          { num: 25, clue: "Emergency signals" }
         ]
       }
     }
