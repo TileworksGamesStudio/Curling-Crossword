@@ -1,1262 +1,1168 @@
 /**
- * CURLING CROSSWORDS — MASTER CLIENT ENGINE
- * Architecture: Platform Shell + Multi-Size Crossword Solver + Daily Scheduler + Vault + 2D Collision Physics
+ * Universal Game Engine: Crossword
+ * Curling Ice Visual Edition with Synthesized Audio & Ambient Drift
  */
 
-(function () {
+(() => {
   'use strict';
 
-  /* ==========================================================================
-     1. CONSTANTS & CONTINUITY BASELINE
-     ========================================================================== */
-  const EPOCH_DATE_STRING = "2026-09-08"; // Day 0 Continuity Baseline
-  const STORAGE_KEY = "curling_crosswords_state_v1";
-  const SOUND_KEY = "curling_puzzles_sound_pref";
+  // Config & Constants
+  const CSV_DATA_PATH = './puzzles.csv';
+  const STORAGE_KEY_NAMESPACE = 'crossword_game_universal_v1';
 
-  /* ==========================================================================
-     2. APP STATE & PERSISTENCE
-     ========================================================================== */
-  const AppState = {
-    currentScreen: 'screen-menu',
-    selectedSize: 'mini', // 'mini' | 'midi' | 'main'
-    activePuzzleId: null,
-    activeDayIndex: 0,
-    isVaultPlay: false,
+  // Universal Navigation Placeholder: To be provided by project owner
+  const HOME_PAGE_URL = 'https://tileworksgamesstudio.github.io/Curling-Menu/';
 
-    // Active board interaction state
-    activeCell: { row: 0, col: 0 },
-    activeDirection: 'across', // 'across' | 'down'
-    userGrid: [], // 2D array of user entered characters
+  // Defensive Global State
+  const state = {
+    records: [],
+    dates: [],
+    todayDate: '',
+    selectedDailyTier: 'mini',
+    activeDate: '',
+    activeTier: '',
+    currentPuzzle: null,
+    userGrid: [],
+    cursor: { r: 0, c: 0 },
+    direction: 'across',
     timerSeconds: 0,
     timerInterval: null,
-    isComplete: false,
-
-    // Continuity & Stats
-    stats: {
-      streak: 0,
-      completedCount: 0,
-      lastCompletedDay: -1
-    },
-    savedProgress: {}, // puzzleId -> { grid, complete, time }
-    soundEnabled: true
+    isSolved: false,
+    saveData: {
+      stats: {
+        played: 0,
+        solved: 0,
+        streak: 0,
+        bestStreak: 0,
+        times: { mini: [], midi: [], main: [] }
+      },
+      inProgress: {},
+      history: {}
+    }
   };
 
-  function loadPersistedState() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed.stats) AppState.stats = Object.assign(AppState.stats, parsed.stats);
-        if (parsed.savedProgress) AppState.savedProgress = parsed.savedProgress;
+  // DOM Elements
+  const el = {
+    screenMenu: document.getElementById('screen-menu'),
+    screenGame: document.getElementById('screen-game'),
+    screenVault: document.getElementById('screen-vault'),
+    screenError: document.getElementById('screen-error'),
+    errorMessage: document.getElementById('error-message'),
+    btnRetryLoad: document.getElementById('btn-retry-load'),
+
+    dailyDateLabel: document.getElementById('daily-date-label'),
+    dailyTierSelector: document.getElementById('daily-tier-selector'),
+    btnPlayDaily: document.getElementById('btn-play-daily'),
+    btnOpenVault: document.getElementById('btn-open-vault'),
+    btnNavHome: document.getElementById('btn-nav-home'),
+    btnOpenStats: document.getElementById('btn-open-stats'),
+    btnOpenHelp: document.getElementById('btn-open-help'),
+
+    btnBackMenu: document.getElementById('btn-back-menu'),
+    btnBackVault: document.getElementById('btn-back-vault'),
+    gamePuzzleTitle: document.getElementById('game-puzzle-title'),
+    gameTimer: document.getElementById('game-timer'),
+    btnGameHelp: document.getElementById('btn-game-help'),
+    gameTierTabs: document.getElementById('game-tier-tabs'),
+    activeClueBadge: document.getElementById('active-clue-badge'),
+    activeClueText: document.getElementById('active-clue-text'),
+    crosswordBoard: document.getElementById('crossword-board'),
+    cluesListAcross: document.getElementById('clues-list-across'),
+    cluesListDown: document.getElementById('clues-list-down'),
+    onscreenKeyboard: document.getElementById('onscreen-keyboard'),
+    vaultList: document.getElementById('vault-list'),
+
+    modalStats: document.getElementById('modal-stats'),
+    modalHelp: document.getElementById('modal-help'),
+    modalVictory: document.getElementById('modal-victory'),
+    statPlayed: document.getElementById('stat-played'),
+    statSolved: document.getElementById('stat-solved'),
+    statStreak: document.getElementById('stat-streak'),
+    statBest: document.getElementById('stat-best'),
+    statsTierTimes: document.getElementById('stats-tier-times'),
+    victorySummaryText: document.getElementById('victory-summary-text'),
+    btnVictoryAction: document.getElementById('btn-victory-action')
+  };
+
+  // ==========================================================================
+  // LIGHTWEIGHT WEB AUDIO HARDWARE SOUND EFFECTS (Failsafe & Subtle)
+  // ==========================================================================
+  let audioCtx = null;
+
+  function initAudio() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        audioCtx = new AudioContextClass();
       }
-      const soundPref = localStorage.getItem(SOUND_KEY);
-      if (soundPref !== null) {
-        AppState.soundEnabled = soundPref === 'true';
-      }
-    } catch (e) {
-      console.warn("Could not read localStorage safely:", e);
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
     }
   }
 
-  function savePersistedState() {
+  function playTone(type) {
     try {
-      const payload = {
-        stats: AppState.stats,
-        savedProgress: AppState.savedProgress
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-      localStorage.setItem(SOUND_KEY, String(AppState.soundEnabled));
+      if (!audioCtx) return;
+      const t = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'tap') {
+        // Crisp stone / ice tap
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(420, t);
+        osc.frequency.exponentialRampToValueAtTime(140, t + 0.04);
+        gain.gain.setValueAtTime(0.04, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+        osc.start(t);
+        osc.stop(t + 0.04);
+      } else if (type === 'btn') {
+        // Tactile equipment press
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(260, t);
+        osc.frequency.exponentialRampToValueAtTime(120, t + 0.05);
+        gain.gain.setValueAtTime(0.05, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        osc.start(t);
+        osc.stop(t + 0.05);
+      } else if (type === 'dir') {
+        // Clean glide tone
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(540, t);
+        osc.frequency.exponentialRampToValueAtTime(720, t + 0.06);
+        gain.gain.setValueAtTime(0.035, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+        osc.start(t);
+        osc.stop(t + 0.06);
+      } else if (type === 'victory') {
+        // Refined 3-note victory triad
+        const chord = [523.25, 659.25, 783.99]; // C5, E5, G5
+        chord.forEach((freq, i) => {
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(freq, t + i * 0.12);
+          g.gain.setValueAtTime(0.05, t + i * 0.12);
+          g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.35);
+          o.connect(g);
+          g.connect(audioCtx.destination);
+          o.start(t + i * 0.12);
+          o.stop(t + i * 0.12 + 0.36);
+        });
+      }
     } catch (e) {
-      console.warn("Could not save to localStorage:", e);
+      // Audio fails silently
     }
   }
 
-  /* ==========================================================================
-     3. AUDIO SYSTEM (Subtle, tactile curling click & stone strike)
-     ========================================================================== */
-  const SoundFX = {
-    ctx: null,
-    init() {
-      if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
-        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  // ==========================================================================
+  // AMBIENT CURLING BACKGROUND CANVAS (12 Curling Icons + Canadian Maple Leaf)
+  // ==========================================================================
+  function initAmbientBackground() {
+    const canvas = document.getElementById('curling-ambient-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }, { passive: true });
+
+    // Maple Leaf Path Geometry from Section 65.6 (normalized to origin 0,0)
+    const leafPath = new Path2D(
+      'M 80.88,247.25 L 89.03,227.14 L 23.27,166.27 L 40.66,157.03 L 33.05,112.46 ' +
+      'L 72.73,116.81 L 84.69,99.96 L 115.67,139.09 L 98.28,54.30 L 124.37,62.99 ' +
+      'L 149.37,17.34 L 172.74,61.91 L 200.46,54.30 L 182.52,138.54 L 213.50,100.50 ' +
+      'L 224.37,116.80 L 263.50,113.00 L 257.52,155.94 L 275.46,167.35 L 209.70,227.68 ' +
+      'L 216.76,248.88 L 158.06,239.10 L 159.69,311.93 L 137.41,311.93 L 140.67,238.56 Z'
+    );
+
+    // 12 Distinct Vector Renderers for Curling Equipment
+    const iconRenderers = [
+      // 1. Curling Stone
+      (ctx) => {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 18, 12, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.rect(-6, -10, 12, 5);
+        ctx.stroke();
+      },
+      // 2. Curling House / Rings
+      (ctx) => {
+        ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
+      },
+      // 3. Curling Broom
+      (ctx) => {
+        ctx.beginPath();
+        ctx.moveTo(-18, -18); ctx.lineTo(12, 12);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.rect(9, 9, 10, 6);
+        ctx.stroke();
+      },
+      // 4. Brush Head
+      (ctx) => {
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(-14, -6, 28, 12, 3) : ctx.rect(-14, -6, 28, 12);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-10, 0); ctx.lineTo(10, 0);
+        ctx.stroke();
+      },
+      // 5. Hack
+      (ctx) => {
+        ctx.beginPath();
+        ctx.moveTo(-12, 8); ctx.lineTo(-4, -8); ctx.lineTo(4, -8); ctx.lineTo(12, 8);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-8, 0); ctx.lineTo(8, 0);
+        ctx.stroke();
+      },
+      // 6. Curling Stone Handle
+      (ctx) => {
+        ctx.beginPath();
+        ctx.moveTo(-12, 4); ctx.lineTo(-12, -6); ctx.lineTo(12, -6); ctx.lineTo(12, 4);
+        ctx.stroke();
+      },
+      // 7. Hog Line
+      (ctx) => {
+        ctx.beginPath();
+        ctx.moveTo(-20, 0); ctx.lineTo(20, 0);
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      },
+      // 8. Back Line
+      (ctx) => {
+        ctx.beginPath();
+        ctx.moveTo(-18, 0); ctx.lineTo(18, 0);
+        ctx.setLineDash([4, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      },
+      // 9. Centre Line
+      (ctx) => {
+        ctx.beginPath();
+        ctx.moveTo(0, -18); ctx.lineTo(0, 18);
+        ctx.setLineDash([6, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      },
+      // 10. Curling Pebble / Ice Texture Motif
+      (ctx) => {
+        ctx.beginPath(); ctx.arc(-8, -6, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(8, -4, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-2, 7, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(10, 8, 1.8, 0, Math.PI * 2); ctx.fill();
+      },
+      // 11. Scoreboard / End Marker
+      (ctx) => {
+        ctx.beginPath();
+        ctx.rect(-14, -10, 28, 20);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-14, 0); ctx.lineTo(14, 0);
+        ctx.moveTo(0, -10); ctx.lineTo(0, 10);
+        ctx.stroke();
+      },
+      // 12. Skip / Throwing Position Silhouette
+      (ctx) => {
+        ctx.beginPath();
+        ctx.arc(-6, -10, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-12, 4); ctx.lineTo(-4, -4); ctx.lineTo(8, 0); ctx.lineTo(14, 10);
+        ctx.stroke();
       }
-    },
-    playTone(freq, type = 'sine', duration = 0.08, gainVal = 0.1) {
-      if (!AppState.soundEnabled) return;
-      try {
-        this.init();
-        if (this.ctx && this.ctx.state === 'suspended') {
-          this.ctx.resume();
-        }
-        if (!this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-        gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + duration);
-      } catch (e) {
-        // Audio error silent fallback
+    ];
+
+    // 3 Depth Levels: Distant, Middle, Near
+    const particles = [];
+    const count = Math.min(24, Math.max(12, Math.floor(window.innerWidth / 45)));
+
+    for (let i = 0; i < count; i++) {
+      const depth = Math.random();
+      let depthProps;
+      if (depth < 0.45) {
+        // Distant
+        depthProps = { scale: 0.45 + Math.random() * 0.2, alpha: 0.05 + Math.random() * 0.05, speed: 0.18 + Math.random() * 0.15 };
+      } else if (depth < 0.8) {
+        // Middle
+        depthProps = { scale: 0.7 + Math.random() * 0.25, alpha: 0.09 + Math.random() * 0.07, speed: 0.35 + Math.random() * 0.25 };
+      } else {
+        // Near
+        depthProps = { scale: 0.95 + Math.random() * 0.35, alpha: 0.13 + Math.random() * 0.09, speed: 0.55 + Math.random() * 0.35 };
       }
-    },
-    keyTap() { this.playTone(420, 'triangle', 0.04, 0.04); },
-    cellTap() { this.playTone(560, 'sine', 0.05, 0.05); },
-    wordDone() { this.playTone(880, 'sine', 0.12, 0.08); },
-    puzzleWin() {
-      if (!AppState.soundEnabled) return;
-      [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
-        setTimeout(() => this.playTone(freq, 'sine', 0.22, 0.1), idx * 90);
+
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.2,
+        vy: -depthProps.speed,
+        rot: Math.random() * Math.PI * 2,
+        vrot: (Math.random() - 0.5) * 0.008,
+        scale: depthProps.scale,
+        alpha: depthProps.alpha,
+        isLeaf: Math.random() < 0.32, // Canadian Maple Leaf frequency
+        iconIndex: Math.floor(Math.random() * iconRenderers.length),
+        colorTheme: Math.random() < 0.65 ? 'blue' : (Math.random() < 0.5 ? 'red' : 'yellow')
       });
     }
-  };
 
-  /* ==========================================================================
-     4. DATE & VAULT SCHEDULING (DAY 0 = 2026-09-08)
-     ========================================================================== */
-  function computeDayIndex() {
-    const epoch = new Date(EPOCH_DATE_STRING + "T00:00:00Z");
-    const now = new Date();
-    const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-    const diffMs = todayUTC.getTime() - epoch.getTime();
-    const day = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    return Math.max(0, day);
+    let animId = null;
+    function renderAmbient() {
+      ctx.clearRect(0, 0, width, height);
+
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vrot;
+
+        if (p.y < -60) {
+          p.y = height + 40;
+          p.x = Math.random() * width;
+        }
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.scale(p.scale, p.scale);
+
+        let strokeStyle, fillStyle;
+        if (p.colorTheme === 'red') {
+          strokeStyle = `rgba(214, 0, 33, ${p.alpha})`;
+          fillStyle = `rgba(214, 0, 33, ${p.alpha * 0.85})`;
+        } else if (p.colorTheme === 'yellow') {
+          strokeStyle = `rgba(255, 184, 0, ${p.alpha * 1.1})`;
+          fillStyle = `rgba(255, 184, 0, ${p.alpha * 0.9})`;
+        } else {
+          strokeStyle = `rgba(15, 36, 59, ${p.alpha})`;
+          fillStyle = `rgba(15, 36, 59, ${p.alpha * 0.85})`;
+        }
+
+        ctx.strokeStyle = strokeStyle;
+        ctx.fillStyle = fillStyle;
+        ctx.lineWidth = 1.6;
+
+        if (p.isLeaf) {
+          // Render the authoritative Canadian Maple Leaf
+          ctx.save();
+          ctx.translate(-14, -16);
+          ctx.scale(0.1, 0.1);
+          ctx.fillStyle = (p.colorTheme === 'yellow') ? fillStyle : `rgba(214, 0, 33, ${p.alpha * 1.2})`;
+          ctx.fill(leafPath);
+          ctx.restore();
+        } else {
+          // Render 1 of the 12 Curling Icons
+          iconRenderers[p.iconIndex](ctx);
+        }
+
+        ctx.restore();
+      });
+
+      animId = requestAnimationFrame(renderAmbient);
+    }
+
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      animId = requestAnimationFrame(renderAmbient);
+    }
   }
 
-  function getDailyPuzzlesForDay(dayIndex) {
-    if (!window.CURLING_CROSSWORDS_DATA) return null;
-    const dataset = window.CURLING_CROSSWORDS_DATA;
-    const miniIdx = dayIndex % dataset.mini.length;
-    const midiIdx = dayIndex % dataset.midi.length;
-    const mainIdx = dayIndex % dataset.main.length;
+  // ==========================================================================
+  // DEFENSIVE CSV PARSING & DATA HANDLING
+  // ==========================================================================
+  function parseCSV(text) {
+    const rows = [];
+    let row = [], cell = '', inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const nextChar = text[i + 1];
+      if (inQuotes) {
+        if (char === '"' && nextChar === '"') { cell += '"'; i++; }
+        else if (char === '"') { inQuotes = false; }
+        else { cell += char; }
+      } else {
+        if (char === '"') { inQuotes = true; }
+        else if (char === ',') { row.push(cell.trim()); cell = ''; }
+        else if (char === '\n' || char === '\r') {
+          if (cell || row.length) { row.push(cell.trim()); rows.push(row); }
+          row = []; cell = '';
+          if (char === '\r' && nextChar === '\n') i++;
+        } else { cell += char; }
+      }
+    }
+    if (cell || row.length) { row.push(cell.trim()); rows.push(row); }
+    if (!rows.length) return [];
+
+    const headers = rows[0].map(h => h.toLowerCase());
+    return rows.slice(1).map(cols => {
+      const obj = {};
+      headers.forEach((h, idx) => { obj[h] = cols[idx] || ''; });
+      return obj;
+    });
+  }
+
+  function loadStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_NAMESPACE);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          state.saveData.stats = { ...state.saveData.stats, ...(parsed.stats || {}) };
+          state.saveData.history = { ...(parsed.history || {}) };
+          state.saveData.inProgress = { ...(parsed.inProgress || {}) };
+        }
+      }
+    } catch (e) {
+      console.warn('Storage unavailable or reset to default state.', e);
+    }
+  }
+
+  function saveStorage() {
+    try {
+      localStorage.setItem(STORAGE_KEY_NAMESPACE, JSON.stringify(state.saveData));
+    } catch (e) {
+      console.warn('Unable to persist to storage.', e);
+    }
+  }
+
+  // Application Lifecycle
+  async function init() {
+    try {
+      loadStorage();
+      bindEvents();
+      initAmbientBackground();
+
+      const res = await fetch(CSV_DATA_PATH, { cache: 'no-store' });
+      if (!res.ok) throw new Error('Network response was not ok');
+      const text = await res.text();
+      const records = parseCSV(text);
+
+      state.records = records.filter(r => /^\d{4}-\d{2}-\d{2}$/.test(r.date) && r.grid);
+      if (!state.records.length) throw new Error('No valid crossword records found.');
+
+      const uniqueDates = [...new Set(state.records.map(r => r.date))].sort();
+      state.dates = uniqueDates;
+
+      // Calculate today's date in UTC/local ISO format
+      const todayISO = new Date().toISOString().slice(0, 10);
+      const availableDates = uniqueDates.filter(d => d <= todayISO);
+
+      state.todayDate = availableDates.length ? availableDates[availableDates.length - 1] : uniqueDates[0];
+
+      renderMenu();
+      showScreen('menu');
+    } catch (err) {
+      showError(err.message || 'Unable to load puzzle records.');
+    }
+  }
+
+  function showError(msg) {
+    el.errorMessage.textContent = msg;
+    showScreen('error');
+  }
+
+  function showScreen(screen) {
+    el.screenMenu.classList.toggle('hidden', screen !== 'menu');
+    el.screenGame.classList.toggle('hidden', screen !== 'game');
+    el.screenVault.classList.toggle('hidden', screen !== 'vault');
+    el.screenError.classList.toggle('hidden', screen !== 'error');
+  }
+
+  // Screen: Main Menu
+  function renderMenu() {
+    el.dailyDateLabel.textContent = formatDate(state.todayDate);
+    el.dailyTierSelector.innerHTML = '';
+
+    const todayTiers = state.records.filter(r => r.date === state.todayDate);
+    if (!todayTiers.length) return;
+
+    if (!todayTiers.some(t => t.tier === state.selectedDailyTier)) {
+      state.selectedDailyTier = todayTiers[0].tier;
+    }
+
+    todayTiers.forEach(item => {
+      const isDone = !!state.saveData.history[`${state.todayDate}_${item.tier}`]?.solved;
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = `tier-pill ${item.tier === state.selectedDailyTier ? 'selected' : ''}`;
+      pill.innerHTML = `${item.tier} ${isDone ? '&#x2713;' : ''}`;
+      pill.addEventListener('click', () => {
+        initAudio();
+        playTone('btn');
+        state.selectedDailyTier = item.tier;
+        renderMenu();
+      });
+      el.dailyTierSelector.appendChild(pill);
+    });
+
+    const isCurrentSolved = !!state.saveData.history[`${state.todayDate}_${state.selectedDailyTier}`]?.solved;
+    el.btnPlayDaily.textContent = isCurrentSolved ? `Review Daily (${state.selectedDailyTier})` : `Play Daily (${state.selectedDailyTier})`;
+  }
+
+  // Screen: Vault (Historical Archive)
+  function renderVault() {
+    el.vaultList.innerHTML = '';
+    const historicalDates = state.dates.filter(d => d < state.todayDate).reverse();
+
+    if (!historicalDates.length) {
+      el.vaultList.innerHTML = '<p style="text-align: center; color: var(--rink-mid-blue); font-weight: 700; padding: 30px;">No historical puzzles in the vault yet.</p>';
+      return;
+    }
+
+    historicalDates.forEach(date => {
+      const dayTiers = state.records.filter(r => r.date === date);
+      const card = document.createElement('article');
+      card.className = 'vault-card';
+
+      const badges = dayTiers.map(t => {
+        const done = !!state.saveData.history[`${date}_${t.tier}`]?.solved;
+        return `<span class="vault-badge ${done ? 'completed' : ''}">${t.tier}${done ? ' &#x2713;' : ''}</span>`;
+      }).join('');
+
+      card.innerHTML = `
+        <span class="vault-date">${formatDate(date)}</span>
+        <div class="vault-badges">${badges}</div>
+      `;
+
+      card.addEventListener('click', () => {
+        initAudio();
+        playTone('btn');
+        loadPuzzle(date, dayTiers[0].tier);
+      });
+
+      el.vaultList.appendChild(card);
+    });
+  }
+
+  // Grid & Clues Parser
+  function parsePuzzleModel(record) {
+    const rawLines = record.grid.split(/[\/\r\n]+/).map(s => s.trim()).filter(Boolean);
+    const size = rawLines.length;
+    const solution = [];
+    const blocks = new Set();
+
+    for (let r = 0; r < size; r++) {
+      solution[r] = [];
+      for (let c = 0; c < size; c++) {
+        const char = (rawLines[r][c] || '#').toUpperCase();
+        if (char === '#') blocks.add(`${r},${c}`);
+        solution[r][c] = char;
+      }
+    }
+
+    let counter = 1;
+    const numbering = {};
+    const wordsAcross = [];
+    const wordsDown = [];
+
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (blocks.has(`${r},${c}`)) continue;
+        const needsAcross = (c === 0 || blocks.has(`${r},${c - 1}`)) && (c + 1 < size && !blocks.has(`${r},${c + 1}`));
+        const needsDown = (r === 0 || blocks.has(`${r - 1},${c}`)) && (r + 1 < size && !blocks.has(`${r + 1},${c}`));
+
+        if (needsAcross || needsDown) {
+          numbering[`${r},${c}`] = counter;
+          if (needsAcross) wordsAcross.push(counter);
+          if (needsDown) wordsDown.push(counter);
+          counter++;
+        }
+      }
+    }
+
+    const parseClueList = (str, wordNums) => {
+      if (!str) return [];
+      const lines = str.split(/\r?\n|\|/).map(s => s.trim()).filter(Boolean);
+      return lines.map((line, idx) => {
+        const match = line.match(/^(\d+)[\.\:\-]?\s*(.+)$/);
+        if (match) return { num: parseInt(match[1], 10), clue: match[2].trim() };
+        return { num: wordNums[idx] || (idx + 1), clue: line };
+      });
+    };
 
     return {
-      mini: dataset.mini[miniIdx],
-      midi: dataset.midi[midiIdx],
-      main: dataset.main[mainIdx]
+      size,
+      solution,
+      blocks,
+      numbering,
+      clues: {
+        across: parseClueList(record.clues_across, wordsAcross),
+        down: parseClueList(record.clues_down, wordsDown)
+      },
+      title: record.title || '',
+      date: record.date,
+      tier: record.tier
     };
   }
 
-  function formatDateForDisplay(dayIndex) {
-    const epoch = new Date(EPOCH_DATE_STRING + "T00:00:00Z");
-    const target = new Date(epoch.getTime() + (dayIndex * 24 * 60 * 60 * 1000));
-    return target.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
-  }
+  // Load and Setup Individual Puzzle
+  function loadPuzzle(date, tier) {
+    const record = state.records.find(r => r.date === date && r.tier === tier);
+    if (!record) return;
 
-  /* ==========================================================================
-     5. BACKGROUND PHYSICS SIMULATION (Curling Rocks Gliding & Deflecting)
-     ========================================================================== */
-  const IceCanvas = {
-    canvas: null,
-    ctx: null,
-    stones: [],
-    animId: null,
-    width: 0,
-    height: 0,
-    lastTime: 0,
-    nextAggressiveEvent: 20,
+    state.activeDate = date;
+    state.activeTier = tier;
+    state.currentPuzzle = parsePuzzleModel(record);
 
-    init() {
-      this.canvas = document.getElementById('ambient-ice-canvas');
-      if (!this.canvas) return;
-      this.ctx = this.canvas.getContext('2d');
-      this.resize();
-      window.addEventListener('resize', () => this.resize());
+    const size = state.currentPuzzle.size;
+    state.userGrid = Array.from({ length: size }, () => Array(size).fill(''));
+    state.isSolved = false;
+    state.timerSeconds = 0;
 
-      const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      this.populateStones();
+    const puzzleKey = `${date}_${tier}`;
+    const savedSolved = state.saveData.history[puzzleKey];
+    const savedInProgress = state.saveData.inProgress[puzzleKey];
 
-      if (!isReduced) {
-        this.lastTime = performance.now();
-        this.loop(this.lastTime);
-      } else {
-        this.render();
-      }
-    },
-
-    resize() {
-      this.width = window.innerWidth;
-      this.height = window.innerHeight;
-      const dpr = window.devicePixelRatio || 1;
-      this.canvas.width = this.width * dpr;
-      this.canvas.height = this.height * dpr;
-      this.canvas.style.width = this.width + 'px';
-      this.canvas.style.height = this.height + 'px';
-      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    },
-
-    populateStones() {
-      const isNarrow = window.innerWidth < 600;
-      const isGameScreen = AppState.currentScreen === 'screen-game';
-      
-      // Quieter ambient environment during gameplay to preserve puzzle focus
-      const count = isGameScreen ? (isNarrow ? 2 : 3) : (isNarrow ? 5 : 7);
-      const radius = isNarrow ? 24 : 30;
-      this.stones = [];
-
-      for (let i = 0; i < count; i++) {
-        const team = (i % 2 === 0) ? 'red' : 'yellow';
-        
-        // Generate pre-computed mineral flecks for authentic Trefor granite
-        const flecks = [];
-        for (let f = 0; f < 12; f++) {
-          const angle = Math.random() * Math.PI * 2;
-          const rDist = (0.25 + Math.random() * 0.6) * radius;
-          flecks.push({
-            x: Math.cos(angle) * rDist,
-            y: Math.sin(angle) * rDist,
-            rad: 0.8 + Math.random() * 1.2,
-            alpha: 0.25 + Math.random() * 0.35
-          });
-        }
-
-        this.stones.push({
-          x: Math.random() * (this.width - radius * 2) + radius,
-          y: Math.random() * (this.height - radius * 2) + radius,
-          vx: (Math.random() - 0.5) * (isGameScreen ? 0.25 : 0.42),
-          vy: (Math.random() - 0.5) * (isGameScreen ? 0.25 : 0.42),
-          radius: radius,
-          mass: radius * radius,
-          team: team,
-          rotation: Math.random() * Math.PI * 2,
-          spinSpeed: (Math.random() - 0.5) * 0.006,
-          flecks: flecks
-        });
-      }
-    },
-
-    triggerAggressiveRock() {
-      if (AppState.currentScreen === 'screen-game') return; // Do not disturb gameplay
-      const isNarrow = window.innerWidth < 600;
-      const radius = isNarrow ? 26 : 32;
-      const team = Math.random() > 0.5 ? 'red' : 'yellow';
-
-      const fromLeft = Math.random() > 0.5;
-      const x = fromLeft ? -radius : this.width + radius;
-      const y = this.height * (0.2 + Math.random() * 0.6);
-      const targetX = this.width * 0.5;
-      const targetY = this.height * 0.5;
-      const angle = Math.atan2(targetY - y, targetX - x);
-      const speed = 2.2 + Math.random() * 0.8;
-
-      const flecks = [];
-      for (let f = 0; f < 14; f++) {
-        const a = Math.random() * Math.PI * 2;
-        const rDist = (0.25 + Math.random() * 0.6) * radius;
-        flecks.push({
-          x: Math.cos(a) * rDist,
-          y: Math.sin(a) * rDist,
-          rad: 0.8 + Math.random() * 1.2,
-          alpha: 0.3 + Math.random() * 0.4
-        });
-      }
-
-      this.stones.push({
-        x: x,
-        y: y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        radius: radius,
-        mass: radius * radius * 1.2,
-        team: team,
-        rotation: 0,
-        spinSpeed: (Math.random() - 0.5) * 0.015,
-        flecks: flecks,
-        isTransient: true
-      });
-    },
-
-    update(dt) {
-      const damping = 0.9985; // Natural sheet friction
-      const restitution = 0.84; // Authentic heavy curling stone collision bounce
-
-      // Aggressive entry event countdown
-      this.nextAggressiveEvent -= dt;
-      if (this.nextAggressiveEvent <= 0) {
-        this.triggerAggressiveRock();
-        this.nextAggressiveEvent = 22 + Math.random() * 12;
-      }
-
-      for (let i = this.stones.length - 1; i >= 0; i--) {
-        const s = this.stones[i];
-        s.x += s.vx * (dt * 60);
-        s.y += s.vy * (dt * 60);
-        s.rotation += s.spinSpeed * (dt * 60);
-        s.vx *= Math.pow(damping, dt * 60);
-        s.vy *= Math.pow(damping, dt * 60);
-
-        // Keep stone alive gently if not transient
-        if (!s.isTransient && Math.hypot(s.vx, s.vy) < 0.1) {
-          s.vx += (Math.random() - 0.5) * 0.12;
-          s.vy += (Math.random() - 0.5) * 0.12;
-        }
-
-        // Boundary reflection
-        if (s.x - s.radius < 0) {
-          s.x = s.radius;
-          s.vx = Math.abs(s.vx) * restitution;
-        } else if (s.x + s.radius > this.width) {
-          s.x = this.width - s.radius;
-          s.vx = -Math.abs(s.vx) * restitution;
-        }
-
-        if (s.y - s.radius < 0) {
-          s.y = s.radius;
-          s.vy = Math.abs(s.vy) * restitution;
-        } else if (s.y + s.radius > this.height) {
-          s.y = this.height - s.radius;
-          s.vy = -Math.abs(s.vy) * restitution;
-        }
-
-        // Cleanup out-of-bounds transients
-        if (s.isTransient && (s.x < -100 || s.x > this.width + 100 || s.y < -100 || s.y > this.height + 100)) {
-          this.stones.splice(i, 1);
-        }
-      }
-
-      // Pairwise Rock Collisions
-      for (let i = 0; i < this.stones.length; i++) {
-        for (let j = i + 1; j < this.stones.length; j++) {
-          const s1 = this.stones[i];
-          const s2 = this.stones[j];
-          const dx = s2.x - s1.x;
-          const dy = s2.y - s1.y;
-          const dist = Math.hypot(dx, dy);
-          const minDist = s1.radius + s2.radius;
-
-          if (dist < minDist && dist > 0.0001) {
-            // 1. Positional overlap correction
-            const overlap = minDist - dist;
-            const nx = dx / dist;
-            const ny = dy / dist;
-
-            s1.x -= nx * overlap * 0.5;
-            s1.y -= ny * overlap * 0.5;
-            s2.x += nx * overlap * 0.5;
-            s2.y += ny * overlap * 0.5;
-
-            // 2. Relative velocity along collision normal
-            const rvx = s2.vx - s1.vx;
-            const rvy = s2.vy - s1.vy;
-            const velAlongNormal = rvx * nx + rvy * ny;
-
-            if (velAlongNormal < 0) {
-              const impulse = -(1 + restitution) * velAlongNormal / (1 / s1.mass + 1 / s2.mass);
-              s1.vx -= (impulse / s1.mass) * nx;
-              s1.vy -= (impulse / s1.mass) * ny;
-              s2.vx += (impulse / s2.mass) * nx;
-              s2.vy += (impulse / s2.mass) * ny;
-
-              // Impart subtle spin transfer on impact
-              s1.spinSpeed += (Math.random() - 0.5) * 0.003;
-              s2.spinSpeed += (Math.random() - 0.5) * 0.003;
-            }
-          }
-        }
-      }
-    },
-
-    render() {
-      this.ctx.clearRect(0, 0, this.width, this.height);
-
-      // --- Subtle Ice Sheet Markings ---
-      const centerX = this.width / 2;
-      const centerY = this.height / 2;
-
-      // Longitudinal Center Line
-      this.ctx.strokeStyle = 'rgba(21, 59, 93, 0.12)';
-      this.ctx.lineWidth = 1.5;
-      this.ctx.beginPath();
-      this.ctx.moveTo(centerX, 0);
-      this.ctx.lineTo(centerX, this.height);
-      this.ctx.stroke();
-
-      // Transverse Tee Line & Hog Line
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, centerY);
-      this.ctx.lineTo(this.width, centerY);
-      this.ctx.stroke();
-
-      // Faint Rink House Rings at Center
-      const maxRingRadius = Math.min(this.width, this.height) * 0.38;
-      if (maxRingRadius > 40 && AppState.currentScreen !== 'screen-game') {
-        // 12-Foot Outer Blue Ring
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, maxRingRadius, 0, Math.PI * 2);
-        this.ctx.strokeStyle = 'rgba(0, 112, 243, 0.14)';
-        this.ctx.lineWidth = maxRingRadius * 0.34;
-        this.ctx.stroke();
-
-        // 4-Foot Red Ring
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, maxRingRadius * 0.33, 0, Math.PI * 2);
-        this.ctx.strokeStyle = 'rgba(214, 59, 59, 0.14)';
-        this.ctx.lineWidth = maxRingRadius * 0.22;
-        this.ctx.stroke();
-
-        // Button
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, maxRingRadius * 0.1, 0, Math.PI * 2);
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-        this.ctx.fill();
-      }
-
-      // --- Render Individual Curling Stones ---
-      const opacity = AppState.currentScreen === 'screen-game' ? 0.35 : 0.88;
-
-      for (let s of this.stones) {
-        this.ctx.save();
-        this.ctx.translate(s.x, s.y);
-        this.ctx.globalAlpha = opacity;
-
-        // 1. Ice Contact Drop Shadow (Grounds stone firmly onto the ice)
-        this.ctx.save();
-        this.ctx.scale(1, 0.7);
-        this.ctx.beginPath();
-        this.ctx.arc(0, s.radius * 0.35, s.radius * 1.05, 0, Math.PI * 2);
-        this.ctx.fillStyle = 'rgba(16, 47, 74, 0.18)';
-        this.ctx.filter = 'blur(4px)';
-        this.ctx.fill();
-        this.ctx.restore();
-
-        // Rotate for granite texture & handle direction
-        this.ctx.rotate(s.rotation);
-
-        // 2. Granite Stone Body (Spherical gradient light catch)
-        const graniteGrad = this.ctx.createRadialGradient(
-          -s.radius * 0.25, -s.radius * 0.25, s.radius * 0.1,
-          0, 0, s.radius
-        );
-        graniteGrad.addColorStop(0, '#c8d4df');
-        graniteGrad.addColorStop(0.5, '#a4b3c2');
-        graniteGrad.addColorStop(0.88, '#8291a0');
-        graniteGrad.addColorStop(1, '#657482');
-
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, s.radius, 0, Math.PI * 2);
-        this.ctx.fillStyle = graniteGrad;
-        this.ctx.fill();
-
-        // 3. Granite Bevel Rim & Edge Shadow
-        this.ctx.lineWidth = 1.6;
-        this.ctx.strokeStyle = 'rgba(21, 59, 93, 0.3)';
-        this.ctx.stroke();
-
-        // 4. Subtle Mineral Inclusions / Flecks
-        for (let fl of s.flecks) {
-          this.ctx.beginPath();
-          this.ctx.arc(fl.x, fl.y, fl.rad, 0, Math.PI * 2);
-          this.ctx.fillStyle = `rgba(30, 48, 68, ${fl.alpha})`;
-          this.ctx.fill();
-        }
-
-        // 5. Polished Striking Band Bevel Ring
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, s.radius * 0.78, 0, Math.PI * 2);
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
-        this.ctx.lineWidth = 1.2;
-        this.ctx.stroke();
-
-        // 6. Central Handle Fastener Hub
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, s.radius * 0.24, 0, Math.PI * 2);
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fill();
-        this.ctx.lineWidth = 1.5;
-        this.ctx.strokeStyle = '#153b5d';
-        this.ctx.stroke();
-
-        // 7. Authentic Red / Yellow Team Gooseneck Handle
-        const isRed = s.team === 'red';
-        const handleColor = isRed ? '#d63b3b' : '#f0c647';
-        const handleShade = isRed ? '#b92e34' : '#d8aa32';
-
-        // Cast shadow of handle onto granite deck
-        this.ctx.beginPath();
-        this.ctx.rect(-s.radius * 0.44 + 2, -s.radius * 0.12 + 3, s.radius * 0.88, s.radius * 0.24);
-        this.ctx.fillStyle = 'rgba(16, 47, 74, 0.28)';
-        this.ctx.fill();
-
-        // Main Handle Bar
-        this.ctx.beginPath();
-        const hW = s.radius * 0.86;
-        const hH = s.radius * 0.24;
-        if (typeof this.ctx.roundRect === 'function') {
-          this.ctx.roundRect(-hW / 2, -hH / 2, hW, hH, 3.5);
-        } else {
-          this.ctx.rect(-hW / 2, -hH / 2, hW, hH);
-        }
-        this.ctx.fillStyle = handleColor;
-        this.ctx.fill();
-        this.ctx.lineWidth = 1.2;
-        this.ctx.strokeStyle = handleShade;
-        this.ctx.stroke();
-
-        // Handle Highlight Line
-        this.ctx.beginPath();
-        this.ctx.moveTo(-hW * 0.38, -hH * 0.2);
-        this.ctx.lineTo(hW * 0.38, -hH * 0.2);
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-        this.ctx.lineWidth = 1.2;
-        this.ctx.stroke();
-
-        this.ctx.restore();
-      }
-    },
-
-    loop(timestamp) {
-      const dt = Math.min((timestamp - this.lastTime) / 1000, 0.05);
-      this.lastTime = timestamp;
-      this.update(dt);
-      this.render();
-      this.animId = requestAnimationFrame((t) => this.loop(t));
-    }
-  };
-
-  /* ==========================================================================
-     6. CROSSWORD BOARD LOGIC & RENDERING
-     ========================================================================== */
-  function getActivePuzzle() {
-    const dataset = window.CURLING_CROSSWORDS_DATA;
-    if (!dataset) return null;
-    const dayPuzzles = getDailyPuzzlesForDay(AppState.activeDayIndex);
-    if (!dayPuzzles) return null;
-    return dayPuzzles[AppState.selectedSize];
-  }
-
-  function initUserGrid(puzzle) {
-    const saved = AppState.savedProgress[puzzle.id];
-    if (saved && saved.grid && saved.grid.length === puzzle.grid.length) {
-      AppState.userGrid = JSON.parse(JSON.stringify(saved.grid));
-      AppState.isComplete = !!saved.complete;
-    } else {
-      AppState.userGrid = [];
-      for (let r = 0; r < puzzle.grid.length; r++) {
-        const row = [];
-        for (let c = 0; c < puzzle.grid[r].length; c++) {
-          row.push(puzzle.grid[r][c] === '#' ? '#' : '');
-        }
-        AppState.userGrid.push(row);
-      }
-      AppState.isComplete = false;
-    }
-  }
-
-  function renderGridDOM(puzzle) {
-    const boardEl = document.getElementById('crossword-board');
-    boardEl.innerHTML = '';
-    const size = puzzle.grid.length;
-    boardEl.dataset.size = size;
-    boardEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
-    boardEl.style.gridTemplateRows = `repeat(${size}, 1fr)`;
-
-    // Find first playable cell if active is blocked
-    if (puzzle.grid[AppState.activeCell.row][AppState.activeCell.col] === '#') {
-      firstPlayable: for (let r = 0; r < size; r++) {
+    if (savedSolved?.solved) {
+      state.isSolved = true;
+      state.timerSeconds = savedSolved.time || 0;
+      for (let r = 0; r < size; r++) {
         for (let c = 0; c < size; c++) {
-          if (puzzle.grid[r][c] !== '#') {
-            AppState.activeCell = { row: r, col: c };
-            break firstPlayable;
+          state.userGrid[r][c] = state.currentPuzzle.solution[r][c];
+        }
+      }
+    } else if (savedInProgress) {
+      state.timerSeconds = savedInProgress.time || 0;
+      if (Array.isArray(savedInProgress.grid)) {
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            state.userGrid[r][c] = savedInProgress.grid[r]?.[c] || '';
           }
         }
       }
     }
+
+    renderGameHeader();
+    renderBoard();
+    renderClues();
+    resetCursor();
+
+    showScreen('game');
+    updateTimerDisplay();
+
+    clearInterval(state.timerInterval);
+    if (!state.isSolved) {
+      state.timerInterval = setInterval(() => {
+        state.timerSeconds++;
+        updateTimerDisplay();
+        persistInProgressState();
+      }, 1000);
+    }
+  }
+
+  function renderGameHeader() {
+    const tierDisplay = state.activeTier ? state.activeTier.toUpperCase() : '';
+    el.gamePuzzleTitle.textContent = `${formatDate(state.activeDate)} · ${tierDisplay}`;
+
+    el.gameTierTabs.innerHTML = '';
+    const dayTiers = state.records.filter(r => r.date === state.activeDate);
+    dayTiers.forEach(t => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `tab-pill ${t.tier === state.activeTier ? 'active' : ''}`;
+      const isDone = !!state.saveData.history[`${state.activeDate}_${t.tier}`]?.solved;
+      btn.innerHTML = `${t.tier} ${isDone ? '&#x2713;' : ''}`;
+      btn.addEventListener('click', () => {
+        initAudio();
+        playTone('btn');
+        loadPuzzle(state.activeDate, t.tier);
+      });
+      el.gameTierTabs.appendChild(btn);
+    });
+  }
+
+  function isBlock(r, c) {
+    const p = state.currentPuzzle;
+    if (r < 0 || c < 0 || r >= p.size || c >= p.size) return true;
+    return p.blocks.has(`${r},${c}`);
+  }
+
+  function renderBoard() {
+    const size = state.currentPuzzle.size;
+    const grid = el.crosswordBoard;
+    grid.innerHTML = '';
+    grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+    grid.style.gridTemplateRows = `repeat(${size}, 1fr)`;
 
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) {
         const cell = document.createElement('div');
-        cell.className = 'grid-cell';
-        cell.dataset.row = r;
-        cell.dataset.col = c;
+        cell.className = 'cell';
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        cell.setAttribute('role', 'gridcell');
 
-        if (puzzle.grid[r][c] === '#') {
-          cell.classList.add('blocked');
+        if (isBlock(r, c)) {
+          cell.classList.add('cell-black');
           cell.setAttribute('aria-hidden', 'true');
         } else {
-          cell.setAttribute('role', 'gridcell');
-          cell.tabIndex = 0;
-
-          const num = puzzle.cellNumbers && puzzle.cellNumbers[r] ? puzzle.cellNumbers[r][c] : null;
+          const num = state.currentPuzzle.numbering[`${r},${c}`];
           if (num) {
-            const numSpan = document.createElement('span');
-            numSpan.className = 'cell-num';
-            numSpan.textContent = num;
-            cell.appendChild(numSpan);
+            const numEl = document.createElement('span');
+            numEl.className = 'cell-num';
+            numEl.textContent = num;
+            cell.appendChild(numEl);
           }
-
-          const letterSpan = document.createElement('span');
-          letterSpan.className = 'cell-letter';
-          letterSpan.textContent = AppState.userGrid[r][c] || '';
-          cell.appendChild(letterSpan);
-
-          cell.addEventListener('pointerdown', (ev) => {
-            ev.preventDefault();
-            onCellClicked(r, c);
+          const letter = state.userGrid[r][c];
+          if (letter) {
+            const letterEl = document.createElement('span');
+            letterEl.className = 'cell-letter';
+            letterEl.textContent = letter;
+            cell.appendChild(letterEl);
+          }
+          cell.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            initAudio();
+            playTone('tap');
+            handleCellTap(r, c);
           });
         }
-        boardEl.appendChild(cell);
+        grid.appendChild(cell);
       }
     }
-
-    updateSelectionHighlight(puzzle);
-    renderCluesLists(puzzle);
-    updateActiveClueBanner(puzzle);
   }
 
-  function onCellClicked(row, col) {
-    const puzzle = getActivePuzzle();
-    if (!puzzle || puzzle.grid[row][col] === '#') return;
+  function renderClues() {
+    el.cluesListAcross.innerHTML = '';
+    el.cluesListDown.innerHTML = '';
 
-    if (AppState.activeCell.row === row && AppState.activeCell.col === col) {
-      // Toggle orientation if clicking currently focused cell
-      AppState.activeDirection = AppState.activeDirection === 'across' ? 'down' : 'across';
-    } else {
-      AppState.activeCell = { row, col };
-    }
-    SoundFX.cellTap();
-    updateSelectionHighlight(puzzle);
-    updateActiveClueBanner(puzzle);
-  }
-
-  function getWordCellsAt(puzzle, row, col, direction) {
-    const cells = [];
-    if (direction === 'across') {
-      let startCol = col;
-      while (startCol > 0 && puzzle.grid[row][startCol - 1] !== '#') startCol--;
-      let c = startCol;
-      while (c < puzzle.grid[0].length && puzzle.grid[row][c] !== '#') {
-        cells.push({ row, col: c });
-        c++;
-      }
-    } else {
-      let startRow = row;
-      while (startRow > 0 && puzzle.grid[startRow - 1][col] !== '#') startRow--;
-      let r = startRow;
-      while (r < puzzle.grid.length && puzzle.grid[r][col] !== '#') {
-        cells.push({ row: r, col });
-        r++;
-      }
-    }
-    return cells;
-  }
-
-  function getActiveClue(puzzle) {
-    const { row, col } = AppState.activeCell;
-    const dir = AppState.activeDirection;
-    const wordCells = getWordCellsAt(puzzle, row, col, dir);
-    if (!wordCells.length) return null;
-    const start = wordCells[0];
-    const clueNum = puzzle.cellNumbers[start.row][start.col];
-
-    const clueObj = puzzle.clues[dir].find(cl => cl.num === clueNum);
-    return clueObj ? { ...clueObj, direction: dir, cells: wordCells } : null;
-  }
-
-  function updateSelectionHighlight(puzzle) {
-    const wordCells = getWordCellsAt(puzzle, AppState.activeCell.row, AppState.activeCell.col, AppState.activeDirection);
-    const cellElements = document.querySelectorAll('#crossword-board .grid-cell:not(.blocked)');
-
-    cellElements.forEach(el => {
-      const r = parseInt(el.dataset.row, 10);
-      const c = parseInt(el.dataset.col, 10);
-      const isFocused = (r === AppState.activeCell.row && c === AppState.activeCell.col);
-      const isInWord = wordCells.some(w => w.row === r && w.col === c);
-
-      el.classList.toggle('active-cell', isFocused);
-      el.classList.toggle('word-highlight', isInWord && !isFocused);
-      if (isFocused) {
-        el.focus({ preventScroll: true });
-      }
-    });
-  }
-
-  function updateActiveClueBanner(puzzle) {
-    const activeClue = getActiveClue(puzzle);
-    const numEl = document.getElementById('active-clue-label');
-    const textEl = document.getElementById('active-clue-text');
-
-    if (activeClue) {
-      numEl.textContent = `${activeClue.num}${activeClue.direction === 'across' ? 'A' : 'D'}`;
-      textEl.textContent = activeClue.clue;
-    } else {
-      numEl.textContent = "—";
-      textEl.textContent = "Select a cell";
-    }
-
-    document.querySelectorAll('.clue-item-row').forEach(row => {
-      const isMatch = activeClue &&
-        row.dataset.dir === activeClue.direction &&
-        parseInt(row.dataset.num, 10) === activeClue.num;
-      row.classList.toggle('active', !!isMatch);
-      if (isMatch) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    });
-  }
-
-  function renderCluesLists(puzzle) {
-    const acrossContainer = document.getElementById('clues-list-across');
-    const downContainer = document.getElementById('clues-list-down');
-    acrossContainer.innerHTML = '';
-    downContainer.innerHTML = '';
-
-    const buildList = (list, dir, el) => {
-      list.forEach(cl => {
-        const row = document.createElement('div');
-        row.className = 'clue-item-row';
-        row.dataset.num = cl.num;
-        row.dataset.dir = dir;
-        row.innerHTML = `<strong>${cl.num}.</strong> <span>${cl.clue}</span>`;
-        row.addEventListener('click', () => {
-          firstCell: for (let r = 0; r < puzzle.grid.length; r++) {
-            for (let c = 0; c < puzzle.grid[0].length; c++) {
-              if (puzzle.cellNumbers[r][c] === cl.num) {
-                AppState.activeCell = { row: r, col: c };
-                AppState.activeDirection = dir;
-                break firstCell;
-              }
-            }
-          }
-          SoundFX.cellTap();
-          updateSelectionHighlight(puzzle);
-          updateActiveClueBanner(puzzle);
-        });
-        el.appendChild(row);
+    const createClueNode = (item, dir) => {
+      const li = document.createElement('li');
+      li.className = 'clue-item';
+      li.dataset.dir = dir;
+      li.dataset.num = item.num;
+      li.innerHTML = `<strong>${item.num}.</strong> ${item.clue}`;
+      li.addEventListener('click', () => {
+        initAudio();
+        playTone('tap');
+        jumpToWord(item.num, dir);
       });
+      return li;
     };
 
-    buildList(puzzle.clues.across, 'across', acrossContainer);
-    buildList(puzzle.clues.down, 'down', downContainer);
+    state.currentPuzzle.clues.across.forEach(c => el.cluesListAcross.appendChild(createClueNode(c, 'across')));
+    state.currentPuzzle.clues.down.forEach(c => el.cluesListDown.appendChild(createClueNode(c, 'down')));
   }
 
-  /* ==========================================================================
-     7. USER INPUT & TYPING PIPELINE
-     ========================================================================== */
-  function handleLetterInput(char) {
-    const puzzle = getActivePuzzle();
-    if (!puzzle || AppState.isComplete) return;
+  function handleCellTap(r, c) {
+    if (isBlock(r, c)) return;
+    if (state.cursor.r === r && state.cursor.c === c) {
+      state.direction = state.direction === 'across' ? 'down' : 'across';
+      playTone('dir');
+    } else {
+      state.cursor = { r, c };
+      if (!isValidDirection(r, c, state.direction)) {
+        state.direction = state.direction === 'across' ? 'down' : 'across';
+      }
+    }
+    updateSelection();
+  }
 
-    const { row, col } = AppState.activeCell;
-    if (puzzle.grid[row][col] === '#') return;
+  function isValidDirection(r, c, dir) {
+    const size = state.currentPuzzle.size;
+    if (dir === 'across') return (c > 0 && !isBlock(r, c - 1)) || (c + 1 < size && !isBlock(r, c + 1));
+    return (r > 0 && !isBlock(r - 1, c)) || (r + 1 < size && !isBlock(r + 1, c));
+  }
 
-    AppState.userGrid[row][col] = char.toUpperCase();
-    SoundFX.keyTap();
+  function resetCursor() {
+    const size = state.currentPuzzle.size;
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (!isBlock(r, c)) {
+          state.cursor = { r, c };
+          state.direction = 'across';
+          updateSelection();
+          return;
+        }
+      }
+    }
+  }
 
-    const cellEl = document.querySelector(`.grid-cell[data-row="${row}"][data-col="${col}"] .cell-letter`);
-    if (cellEl) cellEl.textContent = char.toUpperCase();
+  function getWordSpan(r, c, dir) {
+    const span = [];
+    const size = state.currentPuzzle.size;
+    if (dir === 'across') {
+      let sc = c; while (sc > 0 && !isBlock(r, sc - 1)) sc--;
+      let ec = c; while (ec + 1 < size && !isBlock(r, ec + 1)) ec++;
+      for (let cur = sc; cur <= ec; cur++) span.push({ r, c: cur });
+    } else {
+      let sr = r; while (sr > 0 && !isBlock(sr - 1, c)) sr--;
+      let er = r; while (er + 1 < size && !isBlock(er + 1, c)) er++;
+      for (let cur = sr; cur <= er; cur++) span.push({ r: cur, c });
+    }
+    return span;
+  }
 
-    advanceCursor(puzzle, 1);
-    saveActiveBoardProgress(puzzle);
-    checkPuzzleCompletion(puzzle);
+  function updateSelection() {
+    const { r, c } = state.cursor;
+    const size = state.currentPuzzle.size;
+    const cells = el.crosswordBoard.children;
+
+    for (let i = 0; i < cells.length; i++) {
+      cells[i].classList.remove('cell-active', 'cell-word');
+      cells[i].removeAttribute('aria-selected');
+    }
+
+    const span = getWordSpan(r, c, state.direction);
+    span.forEach(pos => {
+      const idx = pos.r * size + pos.c;
+      if (cells[idx]) cells[idx].classList.add('cell-word');
+    });
+
+    const activeIdx = r * size + c;
+    if (cells[activeIdx]) {
+      cells[activeIdx].classList.add('cell-active');
+      cells[activeIdx].setAttribute('aria-selected', 'true');
+    }
+
+    if (!span.length) return;
+    const root = span[0];
+    const num = state.currentPuzzle.numbering[`${root.r},${root.c}`];
+    const clueObj = state.currentPuzzle.clues[state.direction].find(i => i.num === num);
+
+    el.activeClueBadge.textContent = num ? `${num}${state.direction === 'across' ? 'A' : 'D'}` : '--';
+    el.activeClueText.textContent = clueObj ? clueObj.clue : 'Select a cell.';
+
+    document.querySelectorAll('.clue-item').forEach(item => {
+      const matches = item.dataset.dir === state.direction && Number(item.dataset.num) === num;
+      item.classList.toggle('active', matches);
+      if (matches) item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+  }
+
+  function jumpToWord(num, dir) {
+    for (const [coord, wordNum] of Object.entries(state.currentPuzzle.numbering)) {
+      if (wordNum === num) {
+        const [r, c] = coord.split(',').map(Number);
+        state.cursor = { r, c };
+        state.direction = dir;
+        updateSelection();
+        return;
+      }
+    }
+  }
+
+  function handleInput(char) {
+    if (state.isSolved) return;
+    char = char.toUpperCase();
+    if (!/^[A-Z]$/.test(char)) return;
+
+    playTone('tap');
+
+    const { r, c } = state.cursor;
+    state.userGrid[r][c] = char;
+
+    const size = state.currentPuzzle.size;
+    const cellEl = el.crosswordBoard.children[r * size + c];
+    let letterSpan = cellEl.querySelector('.cell-letter');
+    if (!letterSpan) {
+      letterSpan = document.createElement('span');
+      letterSpan.className = 'cell-letter';
+      cellEl.appendChild(letterSpan);
+    }
+    letterSpan.textContent = char;
+
+    persistInProgressState();
+    advanceCursor(false);
+    checkWin();
   }
 
   function handleBackspace() {
-    const puzzle = getActivePuzzle();
-    if (!puzzle || AppState.isComplete) return;
+    if (state.isSolved) return;
+    playTone('tap');
 
-    const { row, col } = AppState.activeCell;
-    if (AppState.userGrid[row][col] !== '') {
-      AppState.userGrid[row][col] = '';
-      const cellEl = document.querySelector(`.grid-cell[data-row="${row}"][data-col="${col}"] .cell-letter`);
-      if (cellEl) cellEl.textContent = '';
-      SoundFX.keyTap();
+    const { r, c } = state.cursor;
+    const size = state.currentPuzzle.size;
+
+    if (state.userGrid[r][c]) {
+      state.userGrid[r][c] = '';
+      const letterSpan = el.crosswordBoard.children[r * size + c].querySelector('.cell-letter');
+      if (letterSpan) letterSpan.remove();
     } else {
-      advanceCursor(puzzle, -1);
-      const prev = AppState.activeCell;
-      AppState.userGrid[prev.row][prev.col] = '';
-      const cellEl = document.querySelector(`.grid-cell[data-row="${prev.row}"][data-col="${prev.col}"] .cell-letter`);
-      if (cellEl) cellEl.textContent = '';
-      SoundFX.keyTap();
+      advanceCursor(true);
+      const pr = state.cursor.r;
+      const pc = state.cursor.c;
+      state.userGrid[pr][pc] = '';
+      const pSpan = el.crosswordBoard.children[pr * size + pc].querySelector('.cell-letter');
+      if (pSpan) pSpan.remove();
     }
-
-    saveActiveBoardProgress(puzzle);
+    persistInProgressState();
+    updateSelection();
   }
 
-  function advanceCursor(puzzle, step) {
-    let { row, col } = AppState.activeCell;
-    const isAcross = AppState.activeDirection === 'across';
-
-    if (step > 0) {
-      if (isAcross) {
-        if (col + 1 < puzzle.grid[0].length && puzzle.grid[row][col + 1] !== '#') {
-          AppState.activeCell = { row, col: col + 1 };
-        }
-      } else {
-        if (row + 1 < puzzle.grid.length && puzzle.grid[row + 1][col] !== '#') {
-          AppState.activeCell = { row: row + 1, col };
-        }
-      }
-    } else {
-      if (isAcross) {
-        if (col - 1 >= 0 && puzzle.grid[row][col - 1] !== '#') {
-          AppState.activeCell = { row, col: col - 1 };
-        }
-      } else {
-        if (row - 1 >= 0 && puzzle.grid[row - 1][col] !== '#') {
-          AppState.activeCell = { row: row - 1, col };
-        }
+  function advanceCursor(backwards) {
+    const size = state.currentPuzzle.size;
+    let { r, c } = state.cursor;
+    for (let step = 0; step < size; step++) {
+      if (state.direction === 'across') c += backwards ? -1 : 1;
+      else r += backwards ? -1 : 1;
+      if (r < 0 || c < 0 || r >= size || c >= size) break;
+      if (!isBlock(r, c)) {
+        state.cursor = { r, c };
+        break;
       }
     }
-    updateSelectionHighlight(puzzle);
-    updateActiveClueBanner(puzzle);
+    updateSelection();
   }
 
-  function stepClue(delta) {
-    const puzzle = getActivePuzzle();
-    if (!puzzle) return;
-    const currentClue = getActiveClue(puzzle);
-    if (!currentClue) return;
-
-    const list = puzzle.clues[AppState.activeDirection];
-    const currentIdx = list.findIndex(c => c.num === currentClue.num);
-    let nextIdx = currentIdx + delta;
-
-    if (nextIdx < 0) {
-      AppState.activeDirection = AppState.activeDirection === 'across' ? 'down' : 'across';
-      const otherList = puzzle.clues[AppState.activeDirection];
-      nextIdx = otherList.length - 1;
-    } else if (nextIdx >= list.length) {
-      AppState.activeDirection = AppState.activeDirection === 'across' ? 'down' : 'across';
-      nextIdx = 0;
-    }
-
-    const targetClue = puzzle.clues[AppState.activeDirection][nextIdx];
-    if (targetClue) {
-      firstCell: for (let r = 0; r < puzzle.grid.length; r++) {
-        for (let c = 0; c < puzzle.grid[0].length; c++) {
-          if (puzzle.cellNumbers[r][c] === targetClue.num) {
-            AppState.activeCell = { row: r, col: c };
-            break firstCell;
-          }
-        }
-      }
-      SoundFX.cellTap();
-      updateSelectionHighlight(puzzle);
-      updateActiveClueBanner(puzzle);
-    }
-  }
-
-  /* ==========================================================================
-     8. VALIDATION & VICTORY RESOLUTION
-     ========================================================================== */
-  function checkPuzzleCompletion(puzzle) {
-    let allFilled = true;
-    let allCorrect = true;
-
-    for (let r = 0; r < puzzle.grid.length; r++) {
-      for (let c = 0; c < puzzle.grid[0].length; c++) {
-        const expected = puzzle.grid[r][c];
-        if (expected !== '#') {
-          const userVal = AppState.userGrid[r][c];
-          if (!userVal) {
-            allFilled = false;
-            break;
-          }
-          if (userVal !== expected) {
-            allCorrect = false;
-          }
-        }
-      }
-      if (!allFilled) break;
-    }
-
-    if (allFilled && allCorrect && !AppState.isComplete) {
-      AppState.isComplete = true;
-      clearInterval(AppState.timerInterval);
-      saveActiveBoardProgress(puzzle, true);
-
-      // Daily streak management
-      if (!AppState.isVaultPlay && AppState.activeDayIndex !== AppState.stats.lastCompletedDay) {
-        AppState.stats.streak += 1;
-        AppState.stats.completedCount += 1;
-        AppState.stats.lastCompletedDay = AppState.activeDayIndex;
-      } else if (AppState.isVaultPlay) {
-        AppState.stats.completedCount += 1;
-      }
-      savePersistedState();
-      updateMenuBadges();
-
-      setTimeout(() => {
-        SoundFX.puzzleWin();
-        showWinModal(puzzle);
-      }, 350);
-    }
-  }
-
-  function saveActiveBoardProgress(puzzle, isFinished = false) {
-    AppState.savedProgress[puzzle.id] = {
-      grid: AppState.userGrid,
-      complete: isFinished || AppState.isComplete,
-      time: AppState.timerSeconds
+  function persistInProgressState() {
+    if (state.isSolved) return;
+    const key = `${state.activeDate}_${state.activeTier}`;
+    state.saveData.inProgress[key] = {
+      grid: state.userGrid,
+      time: state.timerSeconds
     };
-    savePersistedState();
+    saveStorage();
   }
 
-  function showWinModal(puzzle) {
-    const modal = document.getElementById('modal-complete');
-    document.getElementById('res-time').textContent = formatTimer(AppState.timerSeconds);
-    document.getElementById('res-board').textContent = `${puzzle.title} (${puzzle.size}×${puzzle.size})`;
-    document.getElementById('res-streak').textContent = String(AppState.stats.streak);
-    modal.classList.remove('hidden');
+  function checkWin() {
+    const size = state.currentPuzzle.size;
+    const sol = state.currentPuzzle.solution;
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (!isBlock(r, c) && state.userGrid[r][c] !== sol[r][c]) return false;
+      }
+    }
+
+    state.isSolved = true;
+    clearInterval(state.timerInterval);
+    playTone('victory');
+
+    const histKey = `${state.activeDate}_${state.activeTier}`;
+    delete state.saveData.inProgress[histKey];
+
+    if (!state.saveData.history[histKey]) {
+      state.saveData.history[histKey] = { solved: true, time: state.timerSeconds };
+      state.saveData.stats.played++;
+      state.saveData.stats.solved++;
+      state.saveData.stats.streak++;
+      if (state.saveData.stats.streak > state.saveData.stats.bestStreak) {
+        state.saveData.stats.bestStreak = state.saveData.stats.streak;
+      }
+      if (!state.saveData.stats.times[state.activeTier]) state.saveData.stats.times[state.activeTier] = [];
+      state.saveData.stats.times[state.activeTier].push(state.timerSeconds);
+      saveStorage();
+    }
+
+    renderGameHeader();
+    showVictoryModal();
+    return true;
   }
 
-  function formatTimer(secs) {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
+  function showVictoryModal() {
+    el.victorySummaryText.textContent = `You solved the ${state.activeTier.toUpperCase()} in ${formatTime(state.timerSeconds)}!`;
+
+    const dayTiers = state.records.filter(r => r.date === state.activeDate);
+    const currIdx = dayTiers.findIndex(t => t.tier === state.activeTier);
+    const nextTier = dayTiers[currIdx + 1];
+
+    if (nextTier) {
+      el.btnVictoryAction.textContent = `Play ${nextTier.tier.toUpperCase()}`;
+      el.btnVictoryAction.onclick = () => {
+        initAudio();
+        playTone('btn');
+        closeModal(el.modalVictory);
+        loadPuzzle(state.activeDate, nextTier.tier);
+      };
+    } else {
+      el.btnVictoryAction.textContent = 'Back to Menu';
+      el.btnVictoryAction.onclick = () => {
+        initAudio();
+        playTone('btn');
+        closeModal(el.modalVictory);
+        showScreen('menu');
+        renderMenu();
+      };
+    }
+    openModal(el.modalVictory);
+  }
+
+  function openStatsModal() {
+    const s = state.saveData.stats;
+    el.statPlayed.textContent = s.played;
+    el.statSolved.textContent = s.solved;
+    el.statStreak.textContent = s.streak;
+    el.statBest.textContent = s.bestStreak;
+
+    el.statsTierTimes.innerHTML = '';
+    ['mini', 'midi', 'main'].forEach(tier => {
+      const times = s.times[tier] || [];
+      const med = times.length ? formatTime([...times].sort((a, b) => a - b)[Math.floor(times.length / 2)]) : '--:--';
+      const li = document.createElement('li');
+      li.innerHTML = `<span>${tier}</span><strong>${med}</strong>`;
+      el.statsTierTimes.appendChild(li);
+    });
+    openModal(el.modalStats);
+  }
+
+  function openModal(m) { m.classList.remove('hidden'); }
+  function closeModal(m) { m.classList.add('hidden'); }
+
+  function updateTimerDisplay() {
+    el.gameTimer.textContent = formatTime(state.timerSeconds);
+  }
+
+  function formatTime(secs) {
+    if (secs == null) return '--:--';
+    const m = String(Math.floor(secs / 60)).padStart(2, '0');
+    const s = String(secs % 60).padStart(2, '0');
     return `${m}:${s}`;
   }
 
-  function startTimer() {
-    clearInterval(AppState.timerInterval);
-    const timerEl = document.getElementById('game-timer');
-    AppState.timerInterval = setInterval(() => {
-      if (!AppState.isComplete) {
-        AppState.timerSeconds++;
-        timerEl.textContent = formatTimer(AppState.timerSeconds);
-      }
-    }, 1000);
+  function formatDate(isoStr) {
+    if (!isoStr) return '';
+    const [y, m, d] = isoStr.split('-').map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
   }
 
-  /* ==========================================================================
-     9. NAVIGATION & SCREEN CONTROLS
-     ========================================================================== */
-  function navigateTo(screenId) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    const target = document.getElementById(screenId);
-    if (target) {
-      target.classList.add('active');
-      AppState.currentScreen = screenId;
-    }
-    // Update ambient rock density according to screen context
-    IceCanvas.populateStones();
-  }
+  function bindEvents() {
+    // 1. Play Daily
+    el.btnPlayDaily.addEventListener('click', () => {
+      initAudio();
+      playTone('btn');
+      loadPuzzle(state.todayDate, state.selectedDailyTier);
+    });
 
-  function launchPuzzle(size, dayIndex, isVault = false) {
-    AppState.selectedSize = size;
-    AppState.activeDayIndex = dayIndex;
-    AppState.isVaultPlay = isVault;
+    // 2. Open Vault
+    el.btnOpenVault.addEventListener('click', () => {
+      initAudio();
+      playTone('btn');
+      renderVault();
+      showScreen('vault');
+    });
 
-    const puzzle = getActivePuzzle();
-    if (!puzzle) return;
-
-    AppState.activePuzzleId = puzzle.id;
-    document.getElementById('game-badge-type').textContent = `${puzzle.title} (${puzzle.size}×${puzzle.size})`;
-
-    initUserGrid(puzzle);
-    renderGridDOM(puzzle);
-
-    AppState.timerSeconds = (AppState.savedProgress[puzzle.id] && AppState.savedProgress[puzzle.id].time) || 0;
-    document.getElementById('game-timer').textContent = formatTimer(AppState.timerSeconds);
-    startTimer();
-
-    navigateTo('screen-game');
-  }
-
-  function updateMenuBadges() {
-    const todayIndex = computeDayIndex();
-    const todayPuzzles = getDailyPuzzlesForDay(todayIndex);
-    if (!todayPuzzles) return;
-
-    ['mini', 'midi', 'main'].forEach(size => {
-      const p = todayPuzzles[size];
-      const saved = AppState.savedProgress[p.id];
-      const badge = document.getElementById(`status-badge-${size}`);
-      if (saved && saved.complete) {
-        badge.textContent = "Done";
-        badge.classList.add('done');
+    // 3. Return Home (Dedicated external navigation handler)
+    el.btnNavHome.addEventListener('click', (e) => {
+      e.preventDefault();
+      initAudio();
+      playTone('btn');
+      if (HOME_PAGE_URL && HOME_PAGE_URL !== '#') {
+        window.location.href = HOME_PAGE_URL;
       } else {
-        badge.textContent = "Play";
-        badge.classList.remove('done');
+        console.info('Universal Navigation: HOME clicked. Placeholder: ' + HOME_PAGE_URL);
       }
     });
 
-    document.getElementById('stat-streak').textContent = String(AppState.stats.streak);
-    document.getElementById('stat-completed').textContent = String(AppState.stats.completedCount);
-    document.getElementById('stat-vault-count').textContent = String(todayIndex);
-  }
-
-  function populateVaultScreen(filter = 'all') {
-    const vaultList = document.getElementById('vault-list-items');
-    vaultList.innerHTML = '';
-    const todayIndex = computeDayIndex();
-
-    if (todayIndex === 0) {
-      vaultList.innerHTML = `
-        <div class="glass-panel" style="padding: 24px; text-align: center; color: var(--ink-muted);">
-          <p><strong>The Vault is currently empty.</strong></p>
-          <p style="font-size:0.8rem; margin-top:6px;">Day 0 puzzles are live today. Tomorrow, today’s boards will be safely archived here.</p>
-        </div>`;
-      return;
-    }
-
-    // Populate strictly prior released days (day 0 up to todayIndex - 1)
-    for (let day = todayIndex - 1; day >= 0; day--) {
-      const dayData = getDailyPuzzlesForDay(day);
-      const dateStr = formatDateForDisplay(day);
-
-      const sizes = filter === 'all' ? ['mini', 'midi', 'main'] : [filter];
-
-      sizes.forEach(sz => {
-        const pz = dayData[sz];
-        const isDone = AppState.savedProgress[pz.id] && AppState.savedProgress[pz.id].complete;
-
-        const card = document.createElement('div');
-        card.className = 'vault-card';
-        card.innerHTML = `
-          <div class="vault-card-left">
-            <span class="v-date">${dateStr}</span>
-            <span class="v-meta">${pz.title} • ${pz.size}×${pz.size} • ${isDone ? '✓ Completed' : 'Unfinished'}</span>
-          </div>
-          <button class="btn btn-primary vault-play-btn" data-day="${day}" data-size="${sz}">
-            ${isDone ? 'Replay' : 'Solve'}
-          </button>
-        `;
-        vaultList.appendChild(card);
-      });
-    }
-
-    vaultList.querySelectorAll('.vault-play-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const day = parseInt(btn.dataset.day, 10);
-        const sz = btn.dataset.size;
-        launchPuzzle(sz, day, true);
-      });
+    // Back to Menu from Game Screen
+    el.btnBackMenu.addEventListener('click', () => {
+      initAudio();
+      playTone('btn');
+      clearInterval(state.timerInterval);
+      showScreen('menu');
+      renderMenu();
     });
-  }
 
-  /* ==========================================================================
-     10. ATTACH EVENT LISTENERS
-     ========================================================================== */
-  function attachListeners() {
-    // Menu Size Selector Tabs
-    const pills = document.querySelectorAll('.size-selector-pills .pill-btn');
-    pills.forEach(pill => {
-      pill.addEventListener('click', () => {
-        pills.forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-        AppState.selectedSize = pill.dataset.size;
+    // Back to Menu from Vault
+    el.btnBackVault.addEventListener('click', () => {
+      initAudio();
+      playTone('btn');
+      showScreen('menu');
+      renderMenu();
+    });
 
-        const infoTitle = document.getElementById('selected-info-title');
-        const infoDesc = document.getElementById('selected-info-desc');
-        if (AppState.selectedSize === 'mini') {
-          infoTitle.textContent = "Mini Crossword";
-          infoDesc.textContent = "A fast 4×4 sheet challenge to warm up your delivery.";
-        } else if (AppState.selectedSize === 'midi') {
-          infoTitle.textContent = "Midi Crossword";
-          infoDesc.textContent = "A balanced 6×6 rink grid of medium tactics and team play.";
-        } else {
-          infoTitle.textContent = "Main Crossword";
-          infoDesc.textContent = "A full 10×10 championship test of deep curling strategy and lore.";
-        }
-        SoundFX.cellTap();
+    // Modals & Retry
+    el.btnOpenStats.addEventListener('click', () => {
+      initAudio();
+      playTone('btn');
+      openStatsModal();
+    });
+    el.btnOpenHelp.addEventListener('click', () => {
+      initAudio();
+      playTone('btn');
+      openModal(el.modalHelp);
+    });
+    el.btnGameHelp.addEventListener('click', () => {
+      initAudio();
+      playTone('btn');
+      openModal(el.modalHelp);
+    });
+    el.btnRetryLoad.addEventListener('click', () => {
+      initAudio();
+      playTone('btn');
+      init();
+    });
+
+    document.querySelectorAll('[data-close]').forEach(b => {
+      b.addEventListener('click', () => {
+        initAudio();
+        playTone('btn');
+        closeModal(document.getElementById(b.dataset.close));
       });
     });
 
-    // Play Today Button
-    document.getElementById('btn-play-today').addEventListener('click', () => {
-      launchPuzzle(AppState.selectedSize, computeDayIndex(), false);
-    });
-
-    // Nav to Vault
-    document.getElementById('btn-open-vault').addEventListener('click', () => {
-      populateVaultScreen('all');
-      navigateTo('screen-vault');
-    });
-
-    document.getElementById('btn-vault-back').addEventListener('click', () => {
-      navigateTo('screen-menu');
-    });
-
-    document.getElementById('btn-game-back').addEventListener('click', () => {
-      clearInterval(AppState.timerInterval);
-      navigateTo('screen-menu');
-    });
-
-    document.getElementById('btn-nav-menu').addEventListener('click', () => {
-      clearInterval(AppState.timerInterval);
-      navigateTo('screen-menu');
-    });
-
-    // Sound toggle
-    const soundBtn = document.getElementById('btn-sound-toggle');
-    soundBtn.addEventListener('click', () => {
-      AppState.soundEnabled = !AppState.soundEnabled;
-      document.getElementById('sound-icon-on').classList.toggle('hidden', !AppState.soundEnabled);
-      document.getElementById('sound-icon-off').classList.toggle('hidden', AppState.soundEnabled);
-      savePersistedState();
-      SoundFX.keyTap();
-    });
-
-    // Clue list tabs across / down
-    const tabAcross = document.getElementById('tab-across');
-    const tabDown = document.getElementById('tab-down');
-    const listAcross = document.getElementById('clues-list-across');
-    const listDown = document.getElementById('clues-list-down');
-
-    tabAcross.addEventListener('click', () => {
-      tabAcross.classList.add('active');
-      tabDown.classList.remove('active');
-      listAcross.classList.remove('hidden');
-      listDown.classList.add('hidden');
-      AppState.activeDirection = 'across';
-      updateSelectionHighlight(getActivePuzzle());
-      updateActiveClueBanner(getActivePuzzle());
-    });
-
-    tabDown.addEventListener('click', () => {
-      tabDown.classList.add('active');
-      tabAcross.classList.remove('active');
-      listDown.classList.remove('hidden');
-      listAcross.classList.add('hidden');
-      AppState.activeDirection = 'down';
-      updateSelectionHighlight(getActivePuzzle());
-      updateActiveClueBanner(getActivePuzzle());
-    });
-
-    // Active clue steppers
-    document.getElementById('clue-prev-btn').addEventListener('click', () => stepClue(-1));
-    document.getElementById('clue-next-btn').addEventListener('click', () => stepClue(1));
-
-    // Direction Toggle on virtual keyboard
-    document.getElementById('key-dir-toggle').addEventListener('click', () => {
-      AppState.activeDirection = AppState.activeDirection === 'across' ? 'down' : 'across';
-      SoundFX.cellTap();
-      const p = getActivePuzzle();
-      updateSelectionHighlight(p);
-      updateActiveClueBanner(p);
-    });
-
-    // Touch Virtual Keyboard
-    document.querySelectorAll('#touch-keyboard .key-btn[data-key]').forEach(btn => {
-      btn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        const key = btn.dataset.key;
-        if (key === 'BACKSPACE') {
-          handleBackspace();
-        } else {
-          handleLetterInput(key);
-        }
-      });
-    });
-
-    // Physical Hardware Keyboard
-    window.addEventListener('keydown', (e) => {
-      if (AppState.currentScreen !== 'screen-game') return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-      if (/^[a-zA-Z]$/.test(e.key)) {
-        handleLetterInput(e.key);
-      } else if (e.key === 'Backspace') {
+    // Tactile On-Screen Virtual Keyboard
+    el.onscreenKeyboard.addEventListener('pointerdown', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      e.preventDefault();
+      initAudio();
+      const key = btn.dataset.key;
+      if (key === 'DIR') {
+        state.direction = state.direction === 'across' ? 'down' : 'across';
+        playTone('dir');
+        updateSelection();
+      } else if (key === 'BACKSPACE') {
         handleBackspace();
-      } else if (e.key === 'ArrowRight') {
+      } else if (key) {
+        handleInput(key);
+      }
+    });
+
+    // Physical Hardware Keyboard Support
+    window.addEventListener('keydown', (e) => {
+      initAudio();
+      if (el.screenGame.classList.contains('hidden')) return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.key === 'Backspace') {
         e.preventDefault();
-        AppState.activeDirection = 'across';
-        advanceCursor(getActivePuzzle(), 1);
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        AppState.activeDirection = 'across';
-        advanceCursor(getActivePuzzle(), -1);
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        AppState.activeDirection = 'down';
-        advanceCursor(getActivePuzzle(), 1);
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        AppState.activeDirection = 'down';
-        advanceCursor(getActivePuzzle(), -1);
+        handleBackspace();
       } else if (e.key === ' ' || e.key === 'Tab') {
         e.preventDefault();
-        AppState.activeDirection = AppState.activeDirection === 'across' ? 'down' : 'across';
-        updateSelectionHighlight(getActivePuzzle());
-        updateActiveClueBanner(getActivePuzzle());
+        state.direction = state.direction === 'across' ? 'down' : 'across';
+        playTone('dir');
+        updateSelection();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        state.direction = 'across';
+        playTone('tap');
+        advanceCursor(false);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        state.direction = 'across';
+        playTone('tap');
+        advanceCursor(true);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        state.direction = 'down';
+        playTone('tap');
+        advanceCursor(false);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        state.direction = 'down';
+        playTone('tap');
+        advanceCursor(true);
+      } else if (/^[a-zA-Z]$/.test(e.key)) {
+        handleInput(e.key);
       }
-    });
-
-    // Vault filters
-    document.querySelectorAll('.vault-size-filters .v-filter-btn').forEach(fbtn => {
-      fbtn.addEventListener('click', () => {
-        document.querySelectorAll('.vault-size-filters .v-filter-btn').forEach(b => b.classList.remove('active'));
-        fbtn.classList.add('active');
-        populateVaultScreen(fbtn.dataset.vfilter);
-      });
-    });
-
-    // Win Modal Actions
-    document.getElementById('btn-win-close').addEventListener('click', () => {
-      document.getElementById('modal-complete').classList.add('hidden');
-      navigateTo('screen-menu');
-    });
-
-    document.getElementById('btn-win-next-size').addEventListener('click', () => {
-      document.getElementById('modal-complete').classList.add('hidden');
-      const order = ['mini', 'midi', 'main'];
-      const nextIdx = (order.indexOf(AppState.selectedSize) + 1) % order.length;
-      launchPuzzle(order[nextIdx], AppState.activeDayIndex, AppState.isVaultPlay);
-    });
-
-    // Board Tools Modal
-    const toolsModal = document.getElementById('modal-tools');
-    document.getElementById('btn-reveal-menu').addEventListener('click', () => toolsModal.classList.remove('hidden'));
-    document.getElementById('btn-close-tools').addEventListener('click', () => toolsModal.classList.add('hidden'));
-
-    document.getElementById('tool-check-letter').addEventListener('click', () => {
-      const p = getActivePuzzle();
-      const { row, col } = AppState.activeCell;
-      if (p && p.grid[row][col] !== '#') {
-        if (AppState.userGrid[row][col] !== p.grid[row][col]) {
-          AppState.userGrid[row][col] = '';
-          const cellEl = document.querySelector(`.grid-cell[data-row="${row}"][data-col="${col}"] .cell-letter`);
-          if (cellEl) cellEl.textContent = '';
-        }
-      }
-      toolsModal.classList.add('hidden');
-    });
-
-    document.getElementById('tool-check-word').addEventListener('click', () => {
-      const p = getActivePuzzle();
-      const cells = getWordCellsAt(p, AppState.activeCell.row, AppState.activeCell.col, AppState.activeDirection);
-      cells.forEach(({ row, col }) => {
-        if (AppState.userGrid[row][col] !== p.grid[row][col]) {
-          AppState.userGrid[row][col] = '';
-          const cellEl = document.querySelector(`.grid-cell[data-row="${row}"][data-col="${col}"] .cell-letter`);
-          if (cellEl) cellEl.textContent = '';
-        }
-      });
-      toolsModal.classList.add('hidden');
-    });
-
-    document.getElementById('tool-clear-board').addEventListener('click', () => {
-      const p = getActivePuzzle();
-      if (p) {
-        initUserGrid(p);
-        renderGridDOM(p);
-      }
-      toolsModal.classList.add('hidden');
     });
   }
 
-  /* ==========================================================================
-     11. APP INITIALIZATION & BOOTSTRAP
-     ========================================================================== */
-  function init() {
-    loadPersistedState();
-    const todayIndex = computeDayIndex();
-    document.getElementById('menu-today-date').textContent = formatDateForDisplay(todayIndex);
-
-    IceCanvas.init();
-    attachListeners();
-    updateMenuBadges();
-
-    // Sound icon initialization
-    document.getElementById('sound-icon-on').classList.toggle('hidden', !AppState.soundEnabled);
-    document.getElementById('sound-icon-off').classList.toggle('hidden', AppState.soundEnabled);
-  }
-
+  // Self-initialization
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
-
 })();
