@@ -1,6 +1,7 @@
 /**
- * Universal Game Engine: Crossword
- * Curling Ice Visual Edition with Synthesized Audio & Ambient Drift
+ * Crossword Universal Engine & Canadian Curling Ice House Simulation
+ * Soft Neo-Brutalism, Authoritative Network Clock Sync, Full Game Mechanics
+ * Continuous Bottom-Launch Miniature Curling End with Button Convergence & Recurring Mega Take-outs.
  */
 
 (() => {
@@ -8,16 +9,15 @@
 
   // Config & Constants
   const CSV_DATA_PATH = './puzzles.csv';
-  const STORAGE_KEY_NAMESPACE = 'crossword_game_universal_v1';
-
-  // Universal Navigation Placeholder: To be provided by project owner
+  const STORAGE_KEY_NAMESPACE = 'curling_crossword_game_app_state';
+  const TIME_API_ENDPOINT = 'https://worldtimeapi.org/api/timezone/Europe/London';
   const HOME_PAGE_URL = 'https://tileworksgamesstudio.github.io/Curling-Menu/';
 
-  // Defensive Global State
+  // Defensive Global Application State
   const state = {
     records: [],
     dates: [],
-    todayDate: '',
+    todayUKDate: '',
     selectedDailyTier: 'mini',
     activeDate: '',
     activeTier: '',
@@ -28,6 +28,15 @@
     timerSeconds: 0,
     timerInterval: null,
     isSolved: false,
+
+    // Time Authority Sync
+    timeOffsetMs: 0,
+    isTimeSynced: false,
+
+    // Preferences & Local Data
+    settings: {
+      backgroundAnimation: true
+    },
     saveData: {
       stats: {
         played: 0,
@@ -41,8 +50,14 @@
     }
   };
 
-  // DOM Elements
+  // DOM Elements Map
   const el = {
+    siteHeader: document.getElementById('site-header'),
+    btnHeaderHome: document.getElementById('btn-header-home'),
+    headerGameMeta: document.getElementById('header-game-meta'),
+    gameTimer: document.getElementById('game-timer'),
+    btnGameHelp: document.getElementById('btn-game-help'),
+
     screenMenu: document.getElementById('screen-menu'),
     screenGame: document.getElementById('screen-game'),
     screenVault: document.getElementById('screen-vault'),
@@ -52,334 +67,635 @@
 
     dailyDateLabel: document.getElementById('daily-date-label'),
     dailyTierSelector: document.getElementById('daily-tier-selector'),
-    btnPlayDaily: document.getElementById('btn-play-daily'),
-    btnOpenVault: document.getElementById('btn-open-vault'),
-    btnNavHome: document.getElementById('btn-nav-home'),
-    btnOpenStats: document.getElementById('btn-open-stats'),
-    btnOpenHelp: document.getElementById('btn-open-help'),
+    btnPlayGame: document.getElementById('btn-play-game'),
+    btnPlayLabel: document.getElementById('btn-play-label'),
+    btnMenuVault: document.getElementById('btn-menu-vault'),
+    btnMenuSettings: document.getElementById('btn-menu-settings'),
+    btnMenuHelp: document.getElementById('btn-menu-help'),
 
-    btnBackMenu: document.getElementById('btn-back-menu'),
-    btnBackVault: document.getElementById('btn-back-vault'),
-    gamePuzzleTitle: document.getElementById('game-puzzle-title'),
-    gameTimer: document.getElementById('game-timer'),
-    btnGameHelp: document.getElementById('btn-game-help'),
+    btnUtilStats: document.getElementById('btn-util-stats'),
+    btnUtilShare: document.getElementById('btn-util-share'),
+    btnUtilPlus: document.getElementById('btn-util-plus'),
+
+    gameActiveTitle: document.getElementById('game-active-title'),
+    btnGameBack: document.getElementById('btn-game-back'),
     gameTierTabs: document.getElementById('game-tier-tabs'),
+    activeClueTrigger: document.getElementById('active-clue-trigger'),
     activeClueBadge: document.getElementById('active-clue-badge'),
     activeClueText: document.getElementById('active-clue-text'),
     crosswordBoard: document.getElementById('crossword-board'),
     cluesListAcross: document.getElementById('clues-list-across'),
     cluesListDown: document.getElementById('clues-list-down'),
     onscreenKeyboard: document.getElementById('onscreen-keyboard'),
+
     vaultList: document.getElementById('vault-list'),
+    btnVaultBack: document.getElementById('btn-vault-back'),
+
+    panelHowToPlayOverlay: document.getElementById('panel-howtoplay-overlay'),
+    panelHelpBackdrop: document.getElementById('panel-help-backdrop'),
+    btnCloseHelp: document.getElementById('btn-close-help'),
+
+    modalSettings: document.getElementById('modal-settings'),
+    optAnimOn: document.getElementById('opt-anim-on'),
+    optAnimOff: document.getElementById('opt-anim-off'),
 
     modalStats: document.getElementById('modal-stats'),
-    modalHelp: document.getElementById('modal-help'),
-    modalVictory: document.getElementById('modal-victory'),
     statPlayed: document.getElementById('stat-played'),
     statSolved: document.getElementById('stat-solved'),
     statStreak: document.getElementById('stat-streak'),
     statBest: document.getElementById('stat-best'),
     statsTierTimes: document.getElementById('stats-tier-times'),
+
+    modalVictory: document.getElementById('modal-victory'),
     victorySummaryText: document.getElementById('victory-summary-text'),
-    btnVictoryAction: document.getElementById('btn-victory-action')
+    btnVictoryAction: document.getElementById('btn-victory-action'),
+
+    toastMessage: document.getElementById('toast-message'),
+    curlingCanvas: document.getElementById('curling-simulation-canvas')
   };
 
-  // ==========================================================================
-  // LIGHTWEIGHT WEB AUDIO HARDWARE SOUND EFFECTS (Failsafe & Subtle)
-  // ==========================================================================
-  let audioCtx = null;
+  /* ==========================================================================
+     CANADIAN CURLING ICE HOUSE ENGINE
+     Bottom-launch, strict RED/YELLOW alternation, elevated button (~40% height),
+     predictive button convergence, light curl, and recurring 9th-throw mega take-out.
+     ========================================================================== */
 
-  function initAudio() {
-    if (!audioCtx) {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (AudioContextClass) {
-        audioCtx = new AudioContextClass();
+  class CanadianCurlingSimulation {
+    constructor(canvas) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d');
+      this.rocks = [];
+      this.activeRock = null;
+      this.throwCount = 0;
+      this.lastTime = 0;
+      this.animId = null;
+      this.isEnabled = true;
+
+      // House & Sheet geometry
+      this.houseX = 0;
+      this.houseY = 0;
+      this.houseRadius = 0;
+      this.rockRadius = 16;
+      this.quiescenceTimer = 0;
+      this.interShotTimer = 0.5;
+
+      this.resize();
+      window.addEventListener('resize', () => this.resize());
+    }
+
+    resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      this.canvas.width = w * dpr;
+      this.canvas.height = h * dpr;
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      this.ctx.scale(dpr, dpr);
+
+      this.width = w;
+      this.height = h;
+
+      // Elevated house: ~40% of simulation height
+      this.houseX = w * 0.5;
+      this.houseY = h * 0.40;
+      this.houseRadius = Math.min(w * 0.32, h * 0.22, 170);
+      this.rockRadius = Math.max(13, Math.min(18, this.houseRadius * 0.12));
+    }
+
+    start() {
+      if (!this.isEnabled) return;
+      this.lastTime = performance.now();
+      const loop = (now) => {
+        if (!this.isEnabled) return;
+        const dt = Math.min((now - this.lastTime) / 1000, 0.05);
+        this.lastTime = now;
+        this.update(dt);
+        this.render();
+        this.animId = requestAnimationFrame(loop);
+      };
+      this.animId = requestAnimationFrame(loop);
+    }
+
+    stop() {
+      if (this.animId) cancelAnimationFrame(this.animId);
+      this.animId = null;
+    }
+
+    planNextThrow() {
+      this.throwCount++;
+      const isMega = (this.throwCount % 9 === 0);
+      const isRed = (this.throwCount % 2 === 1);
+      const team = isRed ? 'RED' : 'YELLOW';
+
+      // Corridors: tight ±5% sheet centre corridor
+      const corridorWidth = this.width * 0.10;
+      const startX = this.houseX + (Math.random() - 0.5) * corridorWidth;
+      // Pre-roll below viewport
+      const startY = this.height + (this.height * (0.18 + Math.random() * 0.12));
+
+      let targetX = this.houseX;
+      let targetY = this.houseY;
+      let intent = 'DRAW';
+      let speedMultiplier = 1.0;
+
+      if (isMega) {
+        intent = 'MEGA';
+        speedMultiplier = 2.8 + Math.random() * 0.4; // 2.8x-3.2x cruise speed
+        // Find keystone target from settled rocks
+        const clusterRocks = this.rocks.filter(r => !r.isDelivering && r.inPlay);
+        if (clusterRocks.length > 0) {
+          // Select stone closest to button or with most neighbours
+          clusterRocks.sort((a, b) => {
+            const da = Math.hypot(a.x - this.houseX, a.y - this.houseY);
+            const db = Math.hypot(b.x - this.houseX, b.y - this.houseY);
+            return da - db;
+          });
+          const keystone = clusterRocks[0];
+          // Target keystone with slight edge bias for chain reaction
+          const contactOffset = (Math.random() - 0.5) * this.rockRadius * 0.8;
+          targetX = keystone.x + contactOffset;
+          targetY = keystone.y;
+        }
+      } else {
+        // Evaluate existing formation
+        const occupied = this.rocks.filter(r => !r.isDelivering && r.inPlay);
+        const roll = Math.random();
+
+        if (occupied.length === 0 || roll < 0.55) {
+          // 95% Button Draw Intent
+          intent = 'DRAW';
+          const angle = Math.random() * Math.PI * 2;
+          const dist = Math.random() * (this.houseRadius * 0.08); // within 10% house radius
+          targetX = this.houseX + Math.cos(angle) * dist;
+          targetY = this.houseY + Math.sin(angle) * dist;
+        } else if (roll < 0.72) {
+          // Guard intent in front of house
+          intent = 'GUARD';
+          targetX = this.houseX + (Math.random() - 0.5) * (this.houseRadius * 0.5);
+          targetY = this.houseY + this.houseRadius * (1.1 + Math.random() * 0.35);
+        } else if (roll < 0.88) {
+          // Freeze intent against opponent
+          intent = 'FREEZE';
+          const opponentRocks = occupied.filter(r => r.team !== team);
+          if (opponentRocks.length) {
+            const opp = opponentRocks[Math.floor(Math.random() * opponentRocks.length)];
+            const angle = Math.random() * Math.PI * 2;
+            targetX = opp.x + Math.cos(angle) * (this.rockRadius * 1.85);
+            targetY = opp.y + Math.sin(angle) * (this.rockRadius * 1.85);
+          }
+        } else {
+          // Controlled Take-out / Hit & Roll (~10% hard non-mega class)
+          intent = 'TAKEOUT';
+          speedMultiplier = 1.9 + Math.random() * 0.4;
+          const oppRocks = occupied.filter(r => r.team !== team);
+          if (oppRocks.length) {
+            const opp = oppRocks[0];
+            targetX = opp.x;
+            targetY = opp.y;
+          }
+        }
+      }
+
+      // Light curl calibration: 50% readable light curl
+      const hasCurl = (Math.random() < 0.58) || intent === 'COME-AROUND';
+      const spinSign = Math.random() < 0.5 ? 1 : -1;
+      const spinSpeed = hasCurl ? (1.6 + Math.random() * 1.2) * spinSign : (0.4 + Math.random() * 0.4) * spinSign;
+
+      // Closed-loop initial velocity solving
+      const totalDist = Math.hypot(targetX - startX, targetY - startY);
+      const friction = 0.988;
+      // Solve launch speed so rock decelerates naturally into target
+      let v0 = isMega ? 720 * speedMultiplier : Math.sqrt(2 * (1 - friction) * 60 * totalDist) * 14.5 * speedMultiplier;
+      v0 = Math.max(isMega ? 620 : 210, Math.min(isMega ? 880 : 340, v0));
+
+      const angle = Math.atan2(targetY - startY, targetX - startX);
+      // Curl pre-compensation: aim slightly counter to curl
+      const curlOffset = hasCurl ? (spinSign * -0.045) : 0;
+      const initialHeading = angle + curlOffset;
+
+      const rock = {
+        id: this.throwCount,
+        team,
+        x: startX,
+        y: startY,
+        vx: Math.cos(initialHeading) * v0,
+        vy: Math.sin(initialHeading) * v0,
+        radius: this.rockRadius,
+        mass: 1.0,
+        rotation: Math.random() * Math.PI * 2,
+        angularVelocity: spinSpeed,
+        visualSpin: spinSpeed,
+        curlFactor: hasCurl ? 0.024 * spinSign : 0.002 * spinSign,
+        intent,
+        isDelivering: true,
+        inPlay: true,
+        sleeping: false,
+        stallWatchdog: 0,
+        lastY: startY
+      };
+
+      this.activeRock = rock;
+      this.rocks.push(rock);
+    }
+
+    update(dt) {
+      // 1. Check if board is quiescent to launch next throw
+      let anyMoving = false;
+      for (const r of this.rocks) {
+        if (!r.inPlay) continue;
+        const speed = Math.hypot(r.vx, r.vy);
+        if (speed > 4.0 || r.isDelivering) {
+          anyMoving = true;
+          break;
+        }
+      }
+
+      if (!anyMoving) {
+        this.quiescenceTimer += dt;
+        if (this.quiescenceTimer >= this.interShotTimer) {
+          this.quiescenceTimer = 0;
+          this.planNextThrow();
+        }
+      } else {
+        this.quiescenceTimer = 0;
+      }
+
+      // 2. Physics integration with sub-stepping for CCD on fast mega shots
+      const substeps = this.activeRock?.intent === 'MEGA' ? 4 : 2;
+      const subDt = dt / substeps;
+
+      for (let s = 0; s < substeps; s++) {
+        for (const rock of this.rocks) {
+          if (!rock.inPlay || rock.sleeping) continue;
+
+          // Continuous spin-to-curl lateral drift
+          const speed = Math.hypot(rock.vx, rock.vy);
+          if (speed > 6.0 && rock.curlFactor !== 0) {
+            const sideX = -rock.vy / speed;
+            const sideY = rock.vx / speed;
+            const curlAcc = rock.curlFactor * speed * 3.5;
+            rock.vx += sideX * curlAcc * subDt;
+            rock.vy += sideY * curlAcc * subDt;
+          }
+
+          // Positional travel
+          rock.x += rock.vx * subDt;
+          rock.y += rock.vy * subDt;
+
+          // Ice drag
+          const drag = Math.pow(0.989, subDt * 60);
+          rock.vx *= drag;
+          rock.vy *= drag;
+
+          // Angular deceleration
+          rock.angularVelocity *= Math.pow(0.985, subDt * 60);
+          rock.rotation += rock.angularVelocity * subDt;
+
+          // Independent visual spin tail
+          rock.visualSpin = rock.angularVelocity * 1.5;
+
+          // Anti-bottom-stall watchdog: must progress upward in lower 20%
+          if (rock.isDelivering && rock.y > this.height * 0.8) {
+            rock.stallWatchdog += subDt;
+            if (rock.stallWatchdog > 1.2 && rock.vy > -20) {
+              rock.vy = -180; // Gentle forward nudge to ensure sheet delivery
+              rock.stallWatchdog = 0;
+            }
+          }
+
+          // Settle condition
+          if (rock.isDelivering && rock.y < this.height * 0.75) {
+            if (speed < 4.0) {
+              rock.isDelivering = false;
+              rock.sleeping = true;
+              rock.vx = 0;
+              rock.vy = 0;
+            }
+          } else if (!rock.isDelivering && speed < 3.5) {
+            rock.sleeping = true;
+            rock.vx = 0;
+            rock.vy = 0;
+          }
+
+          // Out-of-bounds physical ejection
+          if (rock.x < -60 || rock.x > this.width + 60 || rock.y < -80 || rock.y > this.height + 140) {
+            rock.inPlay = false;
+            rock.sleeping = true;
+            if (this.activeRock === rock) this.activeRock = null;
+          }
+        }
+
+        // 3. Circle-to-Circle Collision Resolution
+        for (let i = 0; i < this.rocks.length; i++) {
+          const r1 = this.rocks[i];
+          if (!r1.inPlay) continue;
+          for (let j = i + 1; j < this.rocks.length; j++) {
+            const r2 = this.rocks[j];
+            if (!r2.inPlay) continue;
+
+            const dx = r2.x - r1.x;
+            const dy = r2.y - r1.y;
+            const dist = Math.hypot(dx, dy);
+            const minDist = r1.radius + r2.radius;
+
+            if (dist < minDist && dist > 0.001) {
+              // Positional separation
+              const overlap = (minDist - dist);
+              const nx = dx / dist;
+              const ny = dy / dist;
+              r1.x -= nx * overlap * 0.5;
+              r1.y -= ny * overlap * 0.5;
+              r2.x += nx * overlap * 0.5;
+              r2.y += ny * overlap * 0.5;
+
+              // Wake contacted rocks
+              r1.sleeping = false;
+              r2.sleeping = false;
+
+              // Relative normal impulse
+              const kx = r1.vx - r2.vx;
+              const ky = r1.vy - r2.vy;
+              const p = 2 * (nx * kx + ny * ky) / (r1.mass + r2.mass);
+
+              if (p > 0) {
+                // Restitution: hard take-outs preserve high normal momentum
+                const restitution = (r1.intent === 'MEGA' || r2.intent === 'MEGA') ? 0.94 : 0.82;
+                r1.vx -= p * r2.mass * nx * restitution;
+                r1.vy -= p * r2.mass * ny * restitution;
+                r2.vx += p * r1.mass * nx * restitution;
+                r2.vy += p * r1.mass * ny * restitution;
+
+                // Tangential friction
+                const tx = -ny;
+                const ty = nx;
+                const tangentSpeed = (kx * tx + ky * ty) * 0.15;
+                r1.vx -= tx * tangentSpeed;
+                r1.vy -= ty * tangentSpeed;
+                r2.vx += tx * tangentSpeed;
+                r2.vy += ty * tangentSpeed;
+              }
+            }
+          }
+        }
+      }
+
+      // Bounded active formation cleanup (recycle exited rocks safely)
+      if (this.rocks.length > 24) {
+        this.rocks = this.rocks.filter(r => r.inPlay);
       }
     }
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
+
+    render() {
+      const ctx = this.ctx;
+      ctx.clearRect(0, 0, this.width, this.height);
+
+      // 1. Draw Authoritative Curling House Geometry
+      this.drawHouse(ctx);
+
+      // 2. Render Curling Stones
+      for (const rock of this.rocks) {
+        if (!rock.inPlay) continue;
+        this.drawStone(ctx, rock);
+      }
+    }
+
+    drawHouse(ctx) {
+      const x = this.houseX;
+      const y = this.houseY;
+      const hr = this.houseRadius;
+
+      // Concentric Rings: 12-foot, 8-foot, 4-foot, Button
+      ctx.save();
+      ctx.lineWidth = 2.5;
+
+      // 12-Foot Ring (Royal Blue)
+      ctx.beginPath();
+      ctx.arc(x, y, hr, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(18, 59, 114, 0.08)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(18, 59, 114, 0.28)';
+      ctx.stroke();
+
+      // 8-Foot Ring (Ice White / Contrast)
+      ctx.beginPath();
+      ctx.arc(x, y, hr * 0.66, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(18, 59, 114, 0.25)';
+      ctx.stroke();
+
+      // 4-Foot Ring (Red Ring)
+      ctx.beginPath();
+      ctx.arc(x, y, hr * 0.33, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(200, 16, 46, 0.08)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(200, 16, 46, 0.32)';
+      ctx.stroke();
+
+      // The Button (Centre Pin)
+      ctx.beginPath();
+      ctx.arc(x, y, hr * 0.085, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(18, 59, 114, 0.5)';
+      ctx.stroke();
+
+      // Centre & Tee Lines
+      ctx.strokeStyle = 'rgba(18, 59, 114, 0.22)';
+      ctx.lineWidth = 1.5;
+
+      // Tee line
+      ctx.beginPath();
+      ctx.moveTo(x - hr * 1.3, y);
+      ctx.lineTo(x + hr * 1.3, y);
+      ctx.stroke();
+
+      // Centre line
+      ctx.beginPath();
+      ctx.moveTo(x, y - hr * 1.25);
+      ctx.lineTo(x, this.height);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    drawStone(ctx, rock) {
+      ctx.save();
+      ctx.translate(rock.x, rock.y);
+
+      // Contact shadow
+      ctx.beginPath();
+      ctx.arc(2, 4, rock.radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(11, 36, 80, 0.16)';
+      ctx.fill();
+
+      // Granite stone body (identical physical diameter)
+      ctx.beginPath();
+      ctx.arc(0, 0, rock.radius, 0, Math.PI * 2);
+
+      const grad = ctx.createRadialGradient(-3, -4, 2, 0, 0, rock.radius);
+      if (rock.team === 'RED') {
+        grad.addColorStop(0, '#E62645');
+        grad.addColorStop(0.55, '#C8102E');
+        grad.addColorStop(1, '#8B0F24');
+      } else {
+        grad.addColorStop(0, '#FFE875');
+        grad.addColorStop(0.55, '#FFD52A');
+        grad.addColorStop(1, '#C99A00');
+      }
+
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = rock.team === 'RED' ? '#6B0B1C' : '#997300';
+      ctx.stroke();
+
+      // Inner striking band
+      ctx.beginPath();
+      ctx.arc(0, 0, rock.radius * 0.7, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.fill();
+
+      // Polished handle with true rotation
+      ctx.rotate(rock.rotation);
+      ctx.fillStyle = '#0B1724';
+      ctx.fillRect(-rock.radius * 0.55, -2.2, rock.radius * 1.1, 4.4);
+
+      // Handle grip highlight
+      ctx.fillStyle = rock.team === 'RED' ? '#FF667D' : '#FFF2A8';
+      ctx.fillRect(-rock.radius * 0.25, -1.2, rock.radius * 0.5, 2.4);
+
+      ctx.restore();
     }
   }
 
-  function playTone(type) {
-    try {
-      if (!audioCtx) return;
-      const t = audioCtx.currentTime;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
+  let curlingSim = null;
 
-      if (type === 'tap') {
-        // Crisp stone / ice tap
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(420, t);
-        osc.frequency.exponentialRampToValueAtTime(140, t + 0.04);
-        gain.gain.setValueAtTime(0.04, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
-        osc.start(t);
-        osc.stop(t + 0.04);
-      } else if (type === 'btn') {
-        // Tactile equipment press
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(260, t);
-        osc.frequency.exponentialRampToValueAtTime(120, t + 0.05);
-        gain.gain.setValueAtTime(0.05, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
-        osc.start(t);
-        osc.stop(t + 0.05);
-      } else if (type === 'dir') {
-        // Clean glide tone
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(540, t);
-        osc.frequency.exponentialRampToValueAtTime(720, t + 0.06);
-        gain.gain.setValueAtTime(0.035, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-        osc.start(t);
-        osc.stop(t + 0.06);
-      } else if (type === 'victory') {
-        // Refined 3-note victory triad
-        const chord = [523.25, 659.25, 783.99]; // C5, E5, G5
-        chord.forEach((freq, i) => {
-          const o = audioCtx.createOscillator();
-          const g = audioCtx.createGain();
-          o.type = 'sine';
-          o.frequency.setValueAtTime(freq, t + i * 0.12);
-          g.gain.setValueAtTime(0.05, t + i * 0.12);
-          g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.35);
-          o.connect(g);
-          g.connect(audioCtx.destination);
-          o.start(t + i * 0.12);
-          o.stop(t + i * 0.12 + 0.36);
-        });
+  function initCurlingBackground() {
+    curlingSim = new CanadianCurlingSimulation(el.curlingCanvas);
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (state.settings.backgroundAnimation && !prefersReducedMotion) {
+      curlingSim.start();
+    }
+  }
+
+  function setBackgroundAnimation(enabled) {
+    state.settings.backgroundAnimation = enabled;
+    saveStorage();
+
+    el.optAnimOn.classList.toggle('active', enabled);
+    el.optAnimOn.setAttribute('aria-checked', String(enabled));
+    el.optAnimOff.classList.toggle('active', !enabled);
+    el.optAnimOff.setAttribute('aria-checked', String(!enabled));
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (enabled && !prefersReducedMotion) {
+      curlingSim.isEnabled = true;
+      if (!curlingSim.animId) curlingSim.start();
+    } else {
+      curlingSim.isEnabled = false;
+      curlingSim.stop();
+    }
+  }
+
+  /* ==========================================================================
+     TIME SYNCHRONIZATION & UK RELEASE SYSTEM
+     ========================================================================== */
+
+  async function syncAuthoritativeTime() {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      const res = await fetch(TIME_API_ENDPOINT, {
+        cache: 'no-store',
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        const serverEpoch = new Date(data.utc_datetime).getTime();
+        state.timeOffsetMs = serverEpoch - Date.now();
+        state.isTimeSynced = true;
+      } else {
+        throw new Error('WorldTimeAPI status not OK');
       }
     } catch (e) {
-      // Audio fails silently
+      try {
+        const headRes = await fetch(CSV_DATA_PATH, { method: 'HEAD', cache: 'no-store' });
+        const dateHeader = headRes.headers.get('date');
+        if (dateHeader) {
+          const headerEpoch = new Date(dateHeader).getTime();
+          state.timeOffsetMs = headerEpoch - Date.now();
+          state.isTimeSynced = true;
+        }
+      } catch (fallbackErr) {
+        console.warn('Network time sync unavailable; falling back to monotonic local clock.');
+      }
+    }
+
+    state.todayUKDate = calculateUKReleaseDate();
+  }
+
+  function calculateUKReleaseDate() {
+    const authoritativeEpoch = Date.now() + state.timeOffsetMs;
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/London',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    return formatter.format(new Date(authoritativeEpoch));
+  }
+
+  /* ==========================================================================
+     PERSISTENCE & STORAGE
+     ========================================================================== */
+
+  function loadStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_NAMESPACE);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.settings && typeof parsed.settings === 'object') {
+            state.settings = { ...state.settings, ...parsed.settings };
+          }
+          if (parsed.stats && typeof parsed.stats === 'object') {
+            state.saveData.stats = { ...state.saveData.stats, ...parsed.stats };
+          }
+          if (parsed.history && typeof parsed.history === 'object') {
+            state.saveData.history = { ...parsed.history };
+          }
+          if (parsed.inProgress && typeof parsed.inProgress === 'object') {
+            state.saveData.inProgress = { ...parsed.inProgress };
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Local storage empty or inaccessible.');
     }
   }
 
-  // ==========================================================================
-  // AMBIENT CURLING BACKGROUND CANVAS (12 Curling Icons + Canadian Maple Leaf)
-  // ==========================================================================
-  function initAmbientBackground() {
-    const canvas = document.getElementById('curling-ambient-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
-
-    window.addEventListener('resize', () => {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-    }, { passive: true });
-
-    // Maple Leaf Path Geometry from Section 65.6 (normalized to origin 0,0)
-    const leafPath = new Path2D(
-      'M 80.88,247.25 L 89.03,227.14 L 23.27,166.27 L 40.66,157.03 L 33.05,112.46 ' +
-      'L 72.73,116.81 L 84.69,99.96 L 115.67,139.09 L 98.28,54.30 L 124.37,62.99 ' +
-      'L 149.37,17.34 L 172.74,61.91 L 200.46,54.30 L 182.52,138.54 L 213.50,100.50 ' +
-      'L 224.37,116.80 L 263.50,113.00 L 257.52,155.94 L 275.46,167.35 L 209.70,227.68 ' +
-      'L 216.76,248.88 L 158.06,239.10 L 159.69,311.93 L 137.41,311.93 L 140.67,238.56 Z'
-    );
-
-    // 12 Distinct Vector Renderers for Curling Equipment
-    const iconRenderers = [
-      // 1. Curling Stone
-      (ctx) => {
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 18, 12, 0, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.rect(-6, -10, 12, 5);
-        ctx.stroke();
-      },
-      // 2. Curling House / Rings
-      (ctx) => {
-        ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI * 2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
-      },
-      // 3. Curling Broom
-      (ctx) => {
-        ctx.beginPath();
-        ctx.moveTo(-18, -18); ctx.lineTo(12, 12);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.rect(9, 9, 10, 6);
-        ctx.stroke();
-      },
-      // 4. Brush Head
-      (ctx) => {
-        ctx.beginPath();
-        ctx.roundRect ? ctx.roundRect(-14, -6, 28, 12, 3) : ctx.rect(-14, -6, 28, 12);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(-10, 0); ctx.lineTo(10, 0);
-        ctx.stroke();
-      },
-      // 5. Hack
-      (ctx) => {
-        ctx.beginPath();
-        ctx.moveTo(-12, 8); ctx.lineTo(-4, -8); ctx.lineTo(4, -8); ctx.lineTo(12, 8);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(-8, 0); ctx.lineTo(8, 0);
-        ctx.stroke();
-      },
-      // 6. Curling Stone Handle
-      (ctx) => {
-        ctx.beginPath();
-        ctx.moveTo(-12, 4); ctx.lineTo(-12, -6); ctx.lineTo(12, -6); ctx.lineTo(12, 4);
-        ctx.stroke();
-      },
-      // 7. Hog Line
-      (ctx) => {
-        ctx.beginPath();
-        ctx.moveTo(-20, 0); ctx.lineTo(20, 0);
-        ctx.lineWidth = 3;
-        ctx.stroke();
-      },
-      // 8. Back Line
-      (ctx) => {
-        ctx.beginPath();
-        ctx.moveTo(-18, 0); ctx.lineTo(18, 0);
-        ctx.setLineDash([4, 3]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      },
-      // 9. Centre Line
-      (ctx) => {
-        ctx.beginPath();
-        ctx.moveTo(0, -18); ctx.lineTo(0, 18);
-        ctx.setLineDash([6, 3]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      },
-      // 10. Curling Pebble / Ice Texture Motif
-      (ctx) => {
-        ctx.beginPath(); ctx.arc(-8, -6, 2.5, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(8, -4, 2, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(-2, 7, 3, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(10, 8, 1.8, 0, Math.PI * 2); ctx.fill();
-      },
-      // 11. Scoreboard / End Marker
-      (ctx) => {
-        ctx.beginPath();
-        ctx.rect(-14, -10, 28, 20);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(-14, 0); ctx.lineTo(14, 0);
-        ctx.moveTo(0, -10); ctx.lineTo(0, 10);
-        ctx.stroke();
-      },
-      // 12. Skip / Throwing Position Silhouette
-      (ctx) => {
-        ctx.beginPath();
-        ctx.arc(-6, -10, 3.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(-12, 4); ctx.lineTo(-4, -4); ctx.lineTo(8, 0); ctx.lineTo(14, 10);
-        ctx.stroke();
-      }
-    ];
-
-    // 3 Depth Levels: Distant, Middle, Near
-    const particles = [];
-    const count = Math.min(24, Math.max(12, Math.floor(window.innerWidth / 45)));
-
-    for (let i = 0; i < count; i++) {
-      const depth = Math.random();
-      let depthProps;
-      if (depth < 0.45) {
-        // Distant
-        depthProps = { scale: 0.45 + Math.random() * 0.2, alpha: 0.05 + Math.random() * 0.05, speed: 0.18 + Math.random() * 0.15 };
-      } else if (depth < 0.8) {
-        // Middle
-        depthProps = { scale: 0.7 + Math.random() * 0.25, alpha: 0.09 + Math.random() * 0.07, speed: 0.35 + Math.random() * 0.25 };
-      } else {
-        // Near
-        depthProps = { scale: 0.95 + Math.random() * 0.35, alpha: 0.13 + Math.random() * 0.09, speed: 0.55 + Math.random() * 0.35 };
-      }
-
-      particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.2,
-        vy: -depthProps.speed,
-        rot: Math.random() * Math.PI * 2,
-        vrot: (Math.random() - 0.5) * 0.008,
-        scale: depthProps.scale,
-        alpha: depthProps.alpha,
-        isLeaf: Math.random() < 0.32, // Canadian Maple Leaf frequency
-        iconIndex: Math.floor(Math.random() * iconRenderers.length),
-        colorTheme: Math.random() < 0.65 ? 'blue' : (Math.random() < 0.5 ? 'red' : 'yellow')
-      });
-    }
-
-    let animId = null;
-    function renderAmbient() {
-      ctx.clearRect(0, 0, width, height);
-
-      particles.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.rot += p.vrot;
-
-        if (p.y < -60) {
-          p.y = height + 40;
-          p.x = Math.random() * width;
-        }
-
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot);
-        ctx.scale(p.scale, p.scale);
-
-        let strokeStyle, fillStyle;
-        if (p.colorTheme === 'red') {
-          strokeStyle = `rgba(214, 0, 33, ${p.alpha})`;
-          fillStyle = `rgba(214, 0, 33, ${p.alpha * 0.85})`;
-        } else if (p.colorTheme === 'yellow') {
-          strokeStyle = `rgba(255, 184, 0, ${p.alpha * 1.1})`;
-          fillStyle = `rgba(255, 184, 0, ${p.alpha * 0.9})`;
-        } else {
-          strokeStyle = `rgba(15, 36, 59, ${p.alpha})`;
-          fillStyle = `rgba(15, 36, 59, ${p.alpha * 0.85})`;
-        }
-
-        ctx.strokeStyle = strokeStyle;
-        ctx.fillStyle = fillStyle;
-        ctx.lineWidth = 1.6;
-
-        if (p.isLeaf) {
-          // Render the authoritative Canadian Maple Leaf
-          ctx.save();
-          ctx.translate(-14, -16);
-          ctx.scale(0.1, 0.1);
-          ctx.fillStyle = (p.colorTheme === 'yellow') ? fillStyle : `rgba(214, 0, 33, ${p.alpha * 1.2})`;
-          ctx.fill(leafPath);
-          ctx.restore();
-        } else {
-          // Render 1 of the 12 Curling Icons
-          iconRenderers[p.iconIndex](ctx);
-        }
-
-        ctx.restore();
-      });
-
-      animId = requestAnimationFrame(renderAmbient);
-    }
-
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      animId = requestAnimationFrame(renderAmbient);
+  function saveStorage() {
+    try {
+      const payload = {
+        settings: state.settings,
+        stats: state.saveData.stats,
+        history: state.saveData.history,
+        inProgress: state.saveData.inProgress
+      };
+      localStorage.setItem(STORAGE_KEY_NAMESPACE, JSON.stringify(payload));
+    } catch (e) {
+      console.warn('Unable to persist to storage.');
     }
   }
 
-  // ==========================================================================
-  // DEFENSIVE CSV PARSING & DATA HANDLING
-  // ==========================================================================
+  /* ==========================================================================
+     CSV PARSER
+     ========================================================================== */
+
   function parseCSV(text) {
     const rows = [];
     let row = [], cell = '', inQuotes = false;
@@ -411,53 +727,30 @@
     });
   }
 
-  function loadStorage() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY_NAMESPACE);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object') {
-          state.saveData.stats = { ...state.saveData.stats, ...(parsed.stats || {}) };
-          state.saveData.history = { ...(parsed.history || {}) };
-          state.saveData.inProgress = { ...(parsed.inProgress || {}) };
-        }
-      }
-    } catch (e) {
-      console.warn('Storage unavailable or reset to default state.', e);
-    }
-  }
+  /* ==========================================================================
+     APPLICATION INITIALIZATION & SCREEN ROUTING
+     ========================================================================== */
 
-  function saveStorage() {
-    try {
-      localStorage.setItem(STORAGE_KEY_NAMESPACE, JSON.stringify(state.saveData));
-    } catch (e) {
-      console.warn('Unable to persist to storage.', e);
-    }
-  }
-
-  // Application Lifecycle
   async function init() {
     try {
       loadStorage();
       bindEvents();
-      initAmbientBackground();
+      initCurlingBackground();
 
       const res = await fetch(CSV_DATA_PATH, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Network response was not ok');
+      if (!res.ok) throw new Error('Network error loading crossword data.');
       const text = await res.text();
       const records = parseCSV(text);
 
       state.records = records.filter(r => /^\d{4}-\d{2}-\d{2}$/.test(r.date) && r.grid);
       if (!state.records.length) throw new Error('No valid crossword records found.');
 
-      const uniqueDates = [...new Set(state.records.map(r => r.date))].sort();
-      state.dates = uniqueDates;
+      state.dates = [...new Set(state.records.map(r => r.date))].sort();
 
-      // Calculate today's date in UTC/local ISO format
-      const todayISO = new Date().toISOString().slice(0, 10);
-      const availableDates = uniqueDates.filter(d => d <= todayISO);
+      await syncAuthoritativeTime();
 
-      state.todayDate = availableDates.length ? availableDates[availableDates.length - 1] : uniqueDates[0];
+      const availableDates = state.dates.filter(d => d <= state.todayUKDate);
+      state.todayDate = availableDates.length ? availableDates[availableDates.length - 1] : state.dates[0];
 
       renderMenu();
       showScreen('menu');
@@ -476,11 +769,16 @@
     el.screenGame.classList.toggle('hidden', screen !== 'game');
     el.screenVault.classList.toggle('hidden', screen !== 'vault');
     el.screenError.classList.toggle('hidden', screen !== 'error');
+
+    el.headerGameMeta.classList.toggle('active', screen === 'game');
   }
 
-  // Screen: Main Menu
+  /* ==========================================================================
+     SCREEN 1: MAIN MENU
+     ========================================================================== */
+
   function renderMenu() {
-    el.dailyDateLabel.textContent = formatDate(state.todayDate);
+    el.dailyDateLabel.textContent = `Daily Sheet · ${formatDate(state.todayDate)}`;
     el.dailyTierSelector.innerHTML = '';
 
     const todayTiers = state.records.filter(r => r.date === state.todayDate);
@@ -495,10 +793,8 @@
       const pill = document.createElement('button');
       pill.type = 'button';
       pill.className = `tier-pill ${item.tier === state.selectedDailyTier ? 'selected' : ''}`;
-      pill.innerHTML = `${item.tier} ${isDone ? '&#x2713;' : ''}`;
+      pill.innerHTML = `<span>${item.tier}</span>${isDone ? ' &#x2713;' : ''}`;
       pill.addEventListener('click', () => {
-        initAudio();
-        playTone('btn');
         state.selectedDailyTier = item.tier;
         renderMenu();
       });
@@ -506,16 +802,22 @@
     });
 
     const isCurrentSolved = !!state.saveData.history[`${state.todayDate}_${state.selectedDailyTier}`]?.solved;
-    el.btnPlayDaily.textContent = isCurrentSolved ? `Review Daily (${state.selectedDailyTier})` : `Play Daily (${state.selectedDailyTier})`;
+    const tierDisplay = state.selectedDailyTier.charAt(0).toUpperCase() + state.selectedDailyTier.slice(1);
+    el.btnPlayLabel.textContent = isCurrentSolved
+      ? `Review ${tierDisplay} Crossword`
+      : `Play ${tierDisplay} Crossword`;
   }
 
-  // Screen: Vault (Historical Archive)
+  /* ==========================================================================
+     SCREEN 3: VAULT ARCHIVE
+     ========================================================================== */
+
   function renderVault() {
     el.vaultList.innerHTML = '';
     const historicalDates = state.dates.filter(d => d < state.todayDate).reverse();
 
     if (!historicalDates.length) {
-      el.vaultList.innerHTML = '<p style="text-align: center; color: var(--rink-mid-blue); font-weight: 700; padding: 30px;">No historical puzzles in the vault yet.</p>';
+      el.vaultList.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 36px;">No historical sheets in the vault yet.</p>';
       return;
     }
 
@@ -526,7 +828,7 @@
 
       const badges = dayTiers.map(t => {
         const done = !!state.saveData.history[`${date}_${t.tier}`]?.solved;
-        return `<span class="vault-badge ${done ? 'completed' : ''}">${t.tier}${done ? ' &#x2713;' : ''}</span>`;
+        return `<span class="vault-tier-badge ${done ? 'completed' : ''}">${t.tier}${done ? ' &#x2713;' : ''}</span>`;
       }).join('');
 
       card.innerHTML = `
@@ -535,8 +837,6 @@
       `;
 
       card.addEventListener('click', () => {
-        initAudio();
-        playTone('btn');
         loadPuzzle(date, dayTiers[0].tier);
       });
 
@@ -544,7 +844,10 @@
     });
   }
 
-  // Grid & Clues Parser
+  /* ==========================================================================
+     GRID & CLUE PARSER ENGINE
+     ========================================================================== */
+
   function parsePuzzleModel(record) {
     const rawLines = record.grid.split(/[\/\r\n]+/).map(s => s.trim()).filter(Boolean);
     const size = rawLines.length;
@@ -599,13 +902,23 @@
         across: parseClueList(record.clues_across, wordsAcross),
         down: parseClueList(record.clues_down, wordsDown)
       },
-      title: record.title || '',
+      title: record.title || 'Daily Crossword',
       date: record.date,
       tier: record.tier
     };
   }
 
-  // Load and Setup Individual Puzzle
+  function isBlock(r, c) {
+    const p = state.currentPuzzle;
+    if (r < 0 || c < 0 || r >= p.size || c >= p.size) return true;
+    return p.blocks.has(`${r},${c}`);
+  }
+
+  /* ==========================================================================
+     GAMEPLAY STATE & INTERACTION
+     Single-tap cell interaction, zero double-tap lag.
+     ========================================================================== */
+
   function loadPuzzle(date, tier) {
     const record = state.records.find(r => r.date === date && r.tier === tier);
     if (!record) return;
@@ -661,30 +974,19 @@
   }
 
   function renderGameHeader() {
-    const tierDisplay = state.activeTier ? state.activeTier.toUpperCase() : '';
-    el.gamePuzzleTitle.textContent = `${formatDate(state.activeDate)} · ${tierDisplay}`;
-
+    el.gameActiveTitle.textContent = `${state.currentPuzzle.title} · ${state.activeTier.toUpperCase()}`;
     el.gameTierTabs.innerHTML = '';
     const dayTiers = state.records.filter(r => r.date === state.activeDate);
+
     dayTiers.forEach(t => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = `tab-pill ${t.tier === state.activeTier ? 'active' : ''}`;
+      btn.className = `tier-tab-pill ${t.tier === state.activeTier ? 'active' : ''}`;
       const isDone = !!state.saveData.history[`${state.activeDate}_${t.tier}`]?.solved;
-      btn.innerHTML = `${t.tier} ${isDone ? '&#x2713;' : ''}`;
-      btn.addEventListener('click', () => {
-        initAudio();
-        playTone('btn');
-        loadPuzzle(state.activeDate, t.tier);
-      });
+      btn.innerHTML = `${t.tier}${isDone ? ' &#x2713;' : ''}`;
+      btn.addEventListener('click', () => loadPuzzle(state.activeDate, t.tier));
       el.gameTierTabs.appendChild(btn);
     });
-  }
-
-  function isBlock(r, c) {
-    const p = state.currentPuzzle;
-    if (r < 0 || c < 0 || r >= p.size || c >= p.size) return true;
-    return p.blocks.has(`${r},${c}`);
   }
 
   function renderBoard() {
@@ -720,10 +1022,9 @@
             letterEl.textContent = letter;
             cell.appendChild(letterEl);
           }
+
           cell.addEventListener('pointerdown', (e) => {
             e.preventDefault();
-            initAudio();
-            playTone('tap');
             handleCellTap(r, c);
           });
         }
@@ -742,11 +1043,7 @@
       li.dataset.dir = dir;
       li.dataset.num = item.num;
       li.innerHTML = `<strong>${item.num}.</strong> ${item.clue}`;
-      li.addEventListener('click', () => {
-        initAudio();
-        playTone('tap');
-        jumpToWord(item.num, dir);
-      });
+      li.addEventListener('click', () => jumpToWord(item.num, dir));
       return li;
     };
 
@@ -758,7 +1055,6 @@
     if (isBlock(r, c)) return;
     if (state.cursor.r === r && state.cursor.c === c) {
       state.direction = state.direction === 'across' ? 'down' : 'across';
-      playTone('dir');
     } else {
       state.cursor = { r, c };
       if (!isValidDirection(r, c, state.direction)) {
@@ -831,7 +1127,7 @@
     const clueObj = state.currentPuzzle.clues[state.direction].find(i => i.num === num);
 
     el.activeClueBadge.textContent = num ? `${num}${state.direction === 'across' ? 'A' : 'D'}` : '--';
-    el.activeClueText.textContent = clueObj ? clueObj.clue : 'Select a cell.';
+    el.activeClueText.textContent = clueObj ? clueObj.clue : 'Select any cell to view clue.';
 
     document.querySelectorAll('.clue-item').forEach(item => {
       const matches = item.dataset.dir === state.direction && Number(item.dataset.num) === num;
@@ -857,8 +1153,6 @@
     char = char.toUpperCase();
     if (!/^[A-Z]$/.test(char)) return;
 
-    playTone('tap');
-
     const { r, c } = state.cursor;
     state.userGrid[r][c] = char;
 
@@ -879,8 +1173,6 @@
 
   function handleBackspace() {
     if (state.isSolved) return;
-    playTone('tap');
-
     const { r, c } = state.cursor;
     const size = state.currentPuzzle.size;
 
@@ -936,7 +1228,6 @@
 
     state.isSolved = true;
     clearInterval(state.timerInterval);
-    playTone('victory');
 
     const histKey = `${state.activeDate}_${state.activeTier}`;
     delete state.saveData.inProgress[histKey];
@@ -960,25 +1251,20 @@
   }
 
   function showVictoryModal() {
-    el.victorySummaryText.textContent = `You solved the ${state.activeTier.toUpperCase()} in ${formatTime(state.timerSeconds)}!`;
-
+    el.victorySummaryText.textContent = `Completed in ${formatTime(state.timerSeconds)}!`;
     const dayTiers = state.records.filter(r => r.date === state.activeDate);
     const currIdx = dayTiers.findIndex(t => t.tier === state.activeTier);
     const nextTier = dayTiers[currIdx + 1];
 
     if (nextTier) {
-      el.btnVictoryAction.textContent = `Play ${nextTier.tier.toUpperCase()}`;
+      el.btnVictoryAction.querySelector('.btn-text').textContent = `Play ${nextTier.tier.toUpperCase()}`;
       el.btnVictoryAction.onclick = () => {
-        initAudio();
-        playTone('btn');
         closeModal(el.modalVictory);
         loadPuzzle(state.activeDate, nextTier.tier);
       };
     } else {
-      el.btnVictoryAction.textContent = 'Back to Menu';
+      el.btnVictoryAction.querySelector('.btn-text').textContent = 'Back to Menu';
       el.btnVictoryAction.onclick = () => {
-        initAudio();
-        playTone('btn');
         closeModal(el.modalVictory);
         showScreen('menu');
         renderMenu();
@@ -986,6 +1272,29 @@
     }
     openModal(el.modalVictory);
   }
+
+  /* ==========================================================================
+     HOW TO PLAY PANEL (RIGHT-SIDE ENTRY SYSTEM)
+     ========================================================================== */
+
+  function openHowToPlay() {
+    el.panelHowToPlayOverlay.classList.remove('hidden');
+    void el.panelHowToPlayOverlay.offsetWidth;
+    el.panelHowToPlayOverlay.classList.add('active');
+    el.panelHowToPlayOverlay.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeHowToPlay() {
+    el.panelHowToPlayOverlay.classList.remove('active');
+    el.panelHowToPlayOverlay.setAttribute('aria-hidden', 'true');
+    setTimeout(() => {
+      el.panelHowToPlayOverlay.classList.add('hidden');
+    }, 450);
+  }
+
+  /* ==========================================================================
+     STATISTICS, SETTINGS & UTILITIES
+     ========================================================================== */
 
   function openStatsModal() {
     const s = state.saveData.stats;
@@ -1003,6 +1312,55 @@
       el.statsTierTimes.appendChild(li);
     });
     openModal(el.modalStats);
+  }
+
+  function openSettingsModal() {
+    const isAnim = state.settings.backgroundAnimation;
+    el.optAnimOn.classList.toggle('active', isAnim);
+    el.optAnimOn.setAttribute('aria-checked', String(isAnim));
+    el.optAnimOff.classList.toggle('active', !isAnim);
+    el.optAnimOff.setAttribute('aria-checked', String(!isAnim));
+    openModal(el.modalSettings);
+  }
+
+  async function handleShareAction() {
+    const shareData = {
+      title: 'Crossword 🍁 Ice House Royale',
+      text: `Solve today's Crossword Daily on the ice sheet!`,
+      url: window.location.href
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        showToast('Shared successfully!');
+      } catch (err) {
+        // user cancelled
+      }
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        showToast('Sheet link copied to clipboard!');
+      } catch (err) {
+        showToast('Failed to copy link.');
+      }
+    } else {
+      showToast('Sharing not supported on this browser.');
+    }
+  }
+
+  function handlePlusAction() {
+    showToast('Tileworks Portal: More Canadian games coming soon 🍁');
+  }
+
+  function showToast(msg) {
+    el.toastMessage.textContent = msg;
+    el.toastMessage.classList.remove('hidden');
+    el.toastMessage.style.opacity = '1';
+    setTimeout(() => {
+      el.toastMessage.style.opacity = '0';
+      setTimeout(() => el.toastMessage.classList.add('hidden'), 200);
+    }, 2400);
   }
 
   function openModal(m) { m.classList.remove('hidden'); }
@@ -1026,91 +1384,74 @@
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
   }
 
+  /* ==========================================================================
+     EVENT BINDINGS & INPUT ORCHESTRATION
+     ========================================================================== */
+
   function bindEvents() {
-    // 1. Play Daily
-    el.btnPlayDaily.addEventListener('click', () => {
-      initAudio();
-      playTone('btn');
+    el.btnHeaderHome.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (HOME_PAGE_URL && HOME_PAGE_URL !== '#') {
+        window.location.href = HOME_PAGE_URL;
+      } else {
+        showScreen('menu');
+        renderMenu();
+      }
+    });
+
+    el.btnPlayGame.addEventListener('click', () => {
       loadPuzzle(state.todayDate, state.selectedDailyTier);
     });
 
-    // 2. Open Vault
-    el.btnOpenVault.addEventListener('click', () => {
-      initAudio();
-      playTone('btn');
+    el.btnMenuVault.addEventListener('click', () => {
       renderVault();
       showScreen('vault');
     });
 
-    // 3. Return Home (Dedicated external navigation handler)
-    el.btnNavHome.addEventListener('click', (e) => {
-      e.preventDefault();
-      initAudio();
-      playTone('btn');
-      if (HOME_PAGE_URL && HOME_PAGE_URL !== '#') {
-        window.location.href = HOME_PAGE_URL;
-      } else {
-        console.info('Universal Navigation: HOME clicked. Placeholder: ' + HOME_PAGE_URL);
-      }
-    });
+    el.btnMenuSettings.addEventListener('click', openSettingsModal);
+    el.btnMenuHelp.addEventListener('click', openHowToPlay);
+    el.btnGameHelp.addEventListener('click', openHowToPlay);
 
-    // Back to Menu from Game Screen
-    el.btnBackMenu.addEventListener('click', () => {
-      initAudio();
-      playTone('btn');
+    el.btnUtilStats.addEventListener('click', openStatsModal);
+    el.btnUtilShare.addEventListener('click', handleShareAction);
+    el.btnUtilPlus.addEventListener('click', handlePlusAction);
+
+    el.btnGameBack.addEventListener('click', () => {
       clearInterval(state.timerInterval);
       showScreen('menu');
       renderMenu();
     });
 
-    // Back to Menu from Vault
-    el.btnBackVault.addEventListener('click', () => {
-      initAudio();
-      playTone('btn');
+    el.btnVaultBack.addEventListener('click', () => {
       showScreen('menu');
       renderMenu();
     });
 
-    // Modals & Retry
-    el.btnOpenStats.addEventListener('click', () => {
-      initAudio();
-      playTone('btn');
-      openStatsModal();
+    el.activeClueTrigger.addEventListener('click', () => {
+      state.direction = state.direction === 'across' ? 'down' : 'across';
+      updateSelection();
     });
-    el.btnOpenHelp.addEventListener('click', () => {
-      initAudio();
-      playTone('btn');
-      openModal(el.modalHelp);
-    });
-    el.btnGameHelp.addEventListener('click', () => {
-      initAudio();
-      playTone('btn');
-      openModal(el.modalHelp);
-    });
-    el.btnRetryLoad.addEventListener('click', () => {
-      initAudio();
-      playTone('btn');
-      init();
-    });
+
+    el.btnCloseHelp.addEventListener('click', closeHowToPlay);
+    el.panelHelpBackdrop.addEventListener('click', closeHowToPlay);
+
+    el.optAnimOn.addEventListener('click', () => setBackgroundAnimation(true));
+    el.optAnimOff.addEventListener('click', () => setBackgroundAnimation(false));
 
     document.querySelectorAll('[data-close]').forEach(b => {
-      b.addEventListener('click', () => {
-        initAudio();
-        playTone('btn');
-        closeModal(document.getElementById(b.dataset.close));
-      });
+      b.addEventListener('click', () => closeModal(document.getElementById(b.dataset.close)));
     });
 
-    // Tactile On-Screen Virtual Keyboard
+    el.btnRetryLoad.addEventListener('click', init);
+
+    // On-screen tactile keyboard
     el.onscreenKeyboard.addEventListener('pointerdown', (e) => {
       const btn = e.target.closest('button');
       if (!btn) return;
       e.preventDefault();
-      initAudio();
       const key = btn.dataset.key;
       if (key === 'DIR') {
         state.direction = state.direction === 'across' ? 'down' : 'across';
-        playTone('dir');
         updateSelection();
       } else if (key === 'BACKSPACE') {
         handleBackspace();
@@ -1119,9 +1460,8 @@
       }
     });
 
-    // Physical Hardware Keyboard Support
+    // Hardware keyboard
     window.addEventListener('keydown', (e) => {
-      initAudio();
       if (el.screenGame.classList.contains('hidden')) return;
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
@@ -1131,27 +1471,22 @@
       } else if (e.key === ' ' || e.key === 'Tab') {
         e.preventDefault();
         state.direction = state.direction === 'across' ? 'down' : 'across';
-        playTone('dir');
         updateSelection();
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
         state.direction = 'across';
-        playTone('tap');
         advanceCursor(false);
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         state.direction = 'across';
-        playTone('tap');
         advanceCursor(true);
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         state.direction = 'down';
-        playTone('tap');
         advanceCursor(false);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         state.direction = 'down';
-        playTone('tap');
         advanceCursor(true);
       } else if (/^[a-zA-Z]$/.test(e.key)) {
         handleInput(e.key);
@@ -1159,7 +1494,6 @@
     });
   }
 
-  // Self-initialization
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
